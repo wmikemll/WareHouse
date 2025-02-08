@@ -1,30 +1,46 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly NeondbContext _dbContext;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(NeondbContext dbContext)
         {
-            _logger = logger;
+            _dbContext = dbContext;
         }
 
         public IActionResult Index()
         {
 
-            int a = 2;
             return View();
         }
 
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        [HttpPost]
+        [AllowAnonymous] // Allow anonymous access to the Login POST action
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Index(string mail, string password)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            // 1. Authentication Logic
+            var account = _dbContext.Accounts.FirstOrDefault(u => u.Mail == mail && u.Password == password);
+
+            if (account == null)
+            {
+                ViewBag.ErrorMessage = "Неверный email или пароль.";  // Set an error message
+                return View();
+            }
+
+            // 2. Authentication (Create Claims & SignIn)
+
+            // 3. Success - Redirect
+            return RedirectToAction("Index", "Home");
         }
+
     }
 }

@@ -20,3 +20,17 @@ html {
 body {
   margin-bottom: 60px;
 }
+.form-group.has-error label {
+    color: #C60202;
+}
+
+.form-group.has-error input {
+    color: #C60202;
+}
+
+.form-group .error-message {
+    display: none;
+    color: #C60202;
+    font-size: 0.8em;
+    margin-top: 0.25rem;
+}

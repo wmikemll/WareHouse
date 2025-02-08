@@ -1,49 +1,153 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@* Razor-представление ASP.NET Core MVC *@
+@{
+    ViewData["Title"] = "Управление Складом";
+}
+
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - WareHouse</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/WareHouse.styles.css" asp-append-version="true" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <script src="~/js/register.js"></script>
+    <script src="~/js/employee.js"></script>  
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            padding-top: 60px; /* Чтобы контент не перекрывался навбаром */
+        }
+
+        .navbar {
+            background-color: #343a40 !important; /* Тёмный цвет навбара */
+        }
+
+        .navbar-brand,
+        .navbar-nav .nav-link {
+            color: white !important; /* Белый цвет текста навбара */
+        }
+
+            .navbar-nav .nav-link:hover {
+                color: #f8f9fa !important; /* Цвет при наведении */
+            }
+
+        .jumbotron {
+            background-color: #f8f9fa;
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">WareHouse</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+
+    <!-- Навигационная панель -->
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top">
+        <a class="navbar-brand" href="@Url.Action("Index", "Home")">Управление складом</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Index", "Products")">Товары</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Index", "Shipments")">Поставки</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Index", "Sales")">Продажи</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Index", "Employees")">Сотрудники</a>
+                </li>
+            </ul>
+            <form class="form-inline mt-2 mt-md-0">
+                <input class="form-control mr-sm-2" type="text" placeholder="Поиск" aria-label="Search">
+                <button class="btn btn-outline-light my-2 my-sm-0" type="submit">Поиск</button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+
+
+   
+    @RenderBody()
+
+    <div class="modal fade" id="signInModal" tabindex="-1" role="dialog" aria-labelledby="signInModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+                {
+                    <div class="alert alert-danger">
+                        @ViewBag.ErrorMessage
+                    </div>
+                }
+                <div class="modal-header">
+                    <h5 class="modal-title" id="signInModalLabel">Вход</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="signInForm" asp-controller="Home" asp-action="Index" method="post">
+                        <div class="form-group">
+                            <label for="signInEmail">Почта</label>
+                            <input type="email" class="form-control sing-in-mail" id="signInEmail" name="mail" placeholder="Введите вашу почту" required>
+                            <a class="error-message">
+                                <svg width="2" height="10" viewBox="0 0 2 10" fill="none">
+                                    <path d="M1 9L1 4" stroke="white" stroke-width="2" stroke-linecap="round" />
+                                    <circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 0 2)" fill="#FEFFFB" />
+                                </svg>
+                                <span></span>
+                            </a>
+                        </div>
+                        <div class="form-group">
+                            <label for="signInPassword">Пароль</label>
+                            <input type="password" class="form-control sing-in-password" id="signInPassword" name="password" placeholder="Введите ваш пароль" required>
+                            <a class="error-message">
+                                <svg width="2" height="10" viewBox="0 0 2 10" fill="none">
+                                    <path d="M1 9L1 4" stroke="white" stroke-width="2" stroke-linecap="round" />
+                                    <circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 0 2)" fill="#FEFFFB" />
+                                </svg>
+                                <span></span>
+                            </a>
+                        </div>
+                        <button type="submit" class="btn btn-primary sing-in-button">Вход</button>
+                    </form>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - WareHouse - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </div>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#signInModal').modal('show');
+        });
+
+        document.querySelector("#signInForm").addEventListener("submit", function (event) {
+            var mail = document.querySelector(".sing-in-mail");
+            var password = document.querySelector(".sing-in-password");
+            var elemButton = document.querySelector(".sing-in-button");
+
+            document.querySelector("body").style.pointerEvents = "none";
+            elemButton.style.backgroundColor = "#a67dff";
+            elemButton.innerHTML = "Загрузка";
+
+            // Снимаем отображение ошибок
+            mail.parentElement.classList.remove('has-error');
+            password.parentElement.classList.remove('has-error');
+            mail.parentElement.querySelector('.error-message').style.display = 'none';
+            password.parentElement.querySelector('.error-message').style.display = 'none';
+        });
+    </script>
 </body>
 </html>

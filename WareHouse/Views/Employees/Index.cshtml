@@ -1,0 +1,117 @@
+﻿@model List<User>;
+<section id="employees">
+    <h2>Сотрудники</h2>
+    <p>Управление аккаунтами сотрудников.</p>
+    <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addEmployeeModal">Добавить сотрудника</button>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var employee in Model)
+                {
+                    <tr>
+                        <td>@employee.Id</td>
+                        <td>@employee.Name</td>
+                        <td>null</td>
+                        <td>null</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openEditEmployeeModal('@employee.Id', '@employee.Name', '@employee.Role')"><i class="fas fa-edit"></i></button>
+                            <a asp-action="Delete" asp-controller="Employees" asp-route-id="@employee.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="addEmployeeModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEmployeeModalLabel">Добавить сотрудника</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="employeeName">Имя</label>
+                        <input type="text" class="form-control" id="employeeName" placeholder="Введите имя">
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeEmail">Email</label>
+                        <input type="email" class="form-control" id="employeeEmail" placeholder="Введите email">
+                    </div>
+                    <div class="form-group">
+                        <label for="employeePassword">Пароль</label>
+                        <input type="password" class="form-control" id="employeePassword" placeholder="Введите пароль">
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeRole">Роль</label>
+                        <select class="form-control" id="employeeRole">
+                            <option>Администратор</option>
+                            <option>Кладовщик</option>
+                            <option>Продавец</option>
+                            <!-- Добавьте роли из вашей базы данных -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editEmployeeModalLabel">Редактировать сотрудника</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" id="editEmployeeId" />  @* Скрытое поле для хранения ID сотрудника *@
+                    <div class="form-group">
+                        <label for="editEmployeeName">Имя</label>
+                        <input type="text" class="form-control" id="editEmployeeName" placeholder="Введите имя">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmployeeEmail">Email</label>
+                        <input type="email" class="form-control" id="editEmployeeEmail" placeholder="Введите email">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmployeeRole">Роль</label>
+                        <select class="form-control" id="editEmployeeRole">
+                            <option>Администратор</option>
+                            <option>Кладовщик</option>
+                            <option>Продавец</option>
+                            <!-- Добавьте роли из вашей базы данных -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveEmployeeChanges()">Сохранить изменения</button>
+            </div>
+        </div>
+    </div>
+</div>

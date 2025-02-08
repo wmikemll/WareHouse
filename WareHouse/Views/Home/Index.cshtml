@@ -1,8 +1,14 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
+﻿
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<main class="container">
+
+    <!-- Заголовок -->
+    <div class="jumbotron">
+        <h1>Автоматизация склада</h1>
+        <p class="lead">Простой инструмент для управления наличием товаров на складе.</p>
+        <a class="btn btn-primary btn-lg" href="@Url.Action("Index", "Products")" role="button">
+            Управление товарами
+            &raquo;
+        </a>
+    </div>
+</main>
