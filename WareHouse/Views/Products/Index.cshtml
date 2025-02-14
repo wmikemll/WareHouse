@@ -1,89 +1,160 @@
 ﻿<section id="products">
-    <h2>Товары</h2>
-    <p>Список товаров на складе.</p>
-    <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addProductModal">Добавить товар</button>
+	<h2>Товары</h2>
+	<p>Список товаров на складе.</p>
+	<button class="btn btn-success mb-3" data-toggle="modal" data-target="#addProductModal">Добавить товар</button>
 
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Название</th>
-                    <th>Цена</th>
-                    <th>Количество</th>
-                    <th>Категория</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                @* Пример данных. Замените на вашу логику вывода данных *@
-                <tr>
-                    <td>1</td>
-                    <td>Телефон</td>
-                    <td>15000</td>
-                    <td>10</td>
-                    <td>Электроника</td>
-                    <td>
-                        <a asp-action="Edit" asp-controller="Products" asp-route-id="1" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
-                        <a asp-action="Delete" asp-controller="Products" asp-route-id="1" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Книга</td>
-                    <td>500</td>
-                    <td>50</td>
-                    <td>Книги</td>
-                    <td>
-                        <a asp-action="Edit" asp-controller="Products" asp-route-id="2" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
-                        <a asp-action="Delete" asp-controller="Products" asp-route-id="2" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
-                    </td>
-                </tr>
-                @* Здесь будут данные из БД *@
-            </tbody>
-        </table>
-    </div>
+	<div class="table-responsive">
+		<table class="table table-striped table-bordered">
+			<thead>
+				<tr>
+					<th>Название</th>
+					<th>Цена</th>
+					<th>Количество</th>
+					<th>Категория</th>
+					<th>Действия</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (Product product in ViewBag.Products)
+				{
+					<tr>
+						<td>@product.Name</td>
+						<td>@product.Price</td>
+						<td>@product.Count</td>
+						<td>
+							@if (product.Category != null)
+							{
+								@product.Category.Name
+							}
+							else
+							{
+								<span>Категория не задана</span> 
+							}
+						</td>
+						<td>
+							<button type="button" class="btn btn-sm btn-primary edit-product-btn" data-toggle="modal" data-target="#editProductModal"
+									data-product-id="@product.Id"
+									data-product-name="@product.Name"
+									data-product-price="@product.Price"
+									data-product-count="@product.Count"
+									data-product-category-id="@product.Categoryid">
+								<i class="fas fa-edit"></i>
+							</button>
+							<a asp-action="DeleteProduct" asp-controller="Products" asp-route-id="@product.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	<div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="editProductModalLabel">Редактировать товар</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<form asp-action="EditProduct" asp-controller="Products" method="post">
+						<input type="hidden" id="editProductId" name="Id" />
+						<div class="form-group">
+							<label for="editProductName">Название товара</label>
+							<input type="text" class="form-control" id="editProductName" name="Name" placeholder="Введите название товара">
+						</div>
+						<div class="form-group">
+							<label for="editProductPrice">Цена</label>
+							<input type="number" class="form-control" id="editProductPrice" name="Price" placeholder="Введите цену">
+						</div>
+						<div class="form-group">
+							<label for="editProductCount">Количество</label>
+							<input type="number" class="form-control" id="editProductCount" name="Count" placeholder="Введите количество">
+						</div>
+						<div class="form-group">
+							<label for="editProductCategory">Категория</label>
+							<select class="form-control" id="editProductCategory" name="CategoryId">
+								@foreach (Category category in ViewBag.Categories)
+								{
+									<option value="@category.Id">@category.Name</option>
+								}
+							</select>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+							<button type="submit" class="btn btn-primary">Сохранить</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 </section>
 
+@section Scripts {
+	<script>
+		$(document).ready(function () {
+			$('.edit-product-btn').click(function () {
+				var productId = $(this).data('product-id');
+				var productName = $(this).data('product-name');
+				var productPrice = parseFloat($(this).data('product-price')); // Преобразуем в число
+				var productCount = $(this).data('product-count');
+				var productCategoryId = $(this).data('product-category-id');
+
+				// Заполняем поля модального окна данными товара
+				$('#editProductId').val(productId);
+				$('#editProductName').val(productName);
+				$('#editProductPrice').val(productPrice);
+				$('#editProductCount').val(productCount);
+				$('#editProductCategory').val(productCategoryId);
+
+				// Показываем модальное окно
+				$('#editProductModal').modal('show');
+			});
+		});
+	</script>
+}
+
 <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addProductModalLabel">Добавить товар</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="form-group">
-                        <label for="productName">Название товара</label>
-                        <input type="text" class="form-control" id="productName" placeholder="Введите название товара">
-                    </div>
-                    <div class="form-group">
-                        <label for="productPrice">Цена</label>
-                        <input type="number" class="form-control" id="productPrice" placeholder="Введите цену">
-                    </div>
-                    <div class="form-group">
-                        <label for="productCount">Количество</label>
-                        <input type="number" class="form-control" id="productCount" placeholder="Введите количество">
-                    </div>
-                    <div class="form-group">
-                        <label for="productCategory">Категория</label>
-                        <select class="form-control" id="productCategory">
-                            <option>Электроника</option>
-                            <option>Книги</option>
-                            <option>Одежда</option>
-                            <!-- Добавьте категории из вашей базы данных -->
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary">Сохранить</button>
-            </div>
-        </div>
-    </div>
+	 aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="addProductModalLabel">Добавить товар</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form asp-action="AddProduct" asp-controller="Products" method="post">
+					<div class="form-group">
+						<label for="productName">Название товара</label>
+						<input type="text" name="Name" class="form-control" id="productName" placeholder="Введите название товара">
+					</div>
+					<div class="form-group">
+						<label for="productPrice">Цена</label>
+						<input type="number" name="Price" class="form-control" id="productPrice" placeholder="Введите цену">
+					</div>
+					<div class="form-group">
+						<label for="productCount">Количество</label>
+						<input type="number" name="Count" class="form-control" id="productCount" placeholder="Введите количество">
+					</div>
+					<div class="form-group">
+						<label for="productCategory">Категория</label>
+						<select class="form-control" id="productCategory" name="Category">
+							@foreach (Category category in ViewBag.Categories) 
+							{
+								<option value="@category.Id">@category.Name</option>
+							}
+						</select>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+						<button type="submit" class="btn btn-primary">Сохранить</button>
+					</div>
+				</form>
+			</div>
+
+		</div>
+	</div>
 </div>

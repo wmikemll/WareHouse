@@ -44,12 +44,15 @@ public partial class NeondbContext : DbContext
     {
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.HasKey(e => e.Mail).HasName("accounts_pkey");
+            entity.HasKey(e => e.Id).HasName("accounts_pkey");
 
             entity.ToTable("accounts");
 
             entity.HasIndex(e => e.Userid, "accounts_userid_key").IsUnique();
 
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("Id");
             entity.Property(e => e.Mail)
                 .HasMaxLength(50)
                 .HasColumnName("mail");

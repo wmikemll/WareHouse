@@ -1,14 +1,89 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
     public class EmployeesController : Controller
     {
+        private readonly NeondbContext _dbContext;
+        private readonly Random _random;
+
+        public EmployeesController(NeondbContext dbContext)
+        {
+            _random = new Random();
+            _dbContext = dbContext;
+        }
         public IActionResult Index()
         {
-            List<User> users = [new User() { Id = "1234", Name = "Эмиль" }];
-            return View(users);
+            ViewBag.Accounts = _dbContext.Accounts.Include(e => e.User).ToList();
+            ViewBag.Roles = _dbContext.Roles.ToList();
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult AddEmployee(string Name, string Surname, string Patronomic, string Email, string Password, string Phone,int RoleId)
+        {
+            var employee = new User()
+            {
+                Id = _random.Next(100000, 999999).ToString(),
+                Name = Name,
+                Surname = Surname,
+                Patronomic = Patronomic,
+                Roleid = RoleId
+            };
+            _dbContext.Users.Add(employee);
+            _dbContext.SaveChanges();
+            _dbContext.Accounts.Add(new Account() 
+            {
+                Id = _random.Next(100000, 999999).ToString(),
+                Mail = Email,
+                Password = Password,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                Isactive = true,
+                Phone = Phone,
+                Userid = employee.Id
+            });
+            _dbContext.SaveChanges();
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult DeleteEmployee(string id)
+        {
+            var account = _dbContext.Accounts.FirstOrDefault(x => x.Userid == id);
+            var employee = _dbContext.Users.FirstOrDefault(x => x.Id.Trim() == account.Userid);
+            if (account != null && employee != null)
+            {
+                _dbContext.Accounts.Remove(account);
+                _dbContext.SaveChanges();
+                _dbContext.Users.Remove(employee);
+                _dbContext.SaveChanges();
+            }
+            else
+                throw new Exception("Сотрудник не найден для удаления, возможно проблемы с id");
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public IActionResult EditEmployee(string id,string Name, string Surname, string Patronomic, string Email, string Password, string Phone, int RoleId)
+        {
+            var account = _dbContext.Accounts.FirstOrDefault(x => x.Userid == id);
+            var employee = _dbContext.Users.FirstOrDefault(x => x.Id.Trim() == account.Userid);
+            if (account == null && employee == null)
+            {
+                return NotFound();
+            }
+            employee.Name = Name;
+            employee.Surname = Surname;
+            employee.Patronomic = Patronomic;
+            employee.Roleid = RoleId;
+            account.Phone = Phone;
+            account.Mail = Email;
+            account.Password = Password;
+            _dbContext.SaveChanges();
+
+            return RedirectToAction("Index");
         }
     }
 }

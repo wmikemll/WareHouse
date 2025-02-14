@@ -9,7 +9,6 @@ namespace WareHouse.Controllers
     public class HomeController : Controller
     {
         private readonly NeondbContext _dbContext;
-        private readonly ILogger<HomeController> _logger;
 
         public HomeController(NeondbContext dbContext)
         {

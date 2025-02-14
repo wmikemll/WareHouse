@@ -5,6 +5,7 @@ namespace WareHouse.Models;
 
 public partial class Account
 {
+    public string Id { get; set; }
     public string Mail { get; set; } = null!;
 
     public string? Phone { get; set; }

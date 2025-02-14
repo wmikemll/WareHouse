@@ -1,7 +1,6 @@
-﻿@model List<User>;
-<section id="employees">
+﻿<section id="employees">
     <h2>Сотрудники</h2>
-    <p>Управление аккаунтами сотрудников.</p>
+    <p>Список сотрудников компании.</p>
     <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addEmployeeModal">Добавить сотрудника</button>
 
     <div class="table-responsive">
@@ -16,102 +15,177 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var employee in Model)
+                @foreach (Account account in ViewBag.Accounts)
                 {
+                    List<Role> roles = ViewBag.Roles;
+                    Role role = roles.FirstOrDefault(r => r.Id == account.User.Roleid);
                     <tr>
-                        <td>@employee.Id</td>
-                        <td>@employee.Name</td>
-                        <td>null</td>
-                        <td>null</td>
+                        <td>@account.User.Id</td>
+                        <td>@account.User.Name</td>
+                        <td>@account.Mail</td>
+                        <td>@role.Name</td>
                         <td>
-                            <button class="btn btn-sm btn-primary" onclick="openEditEmployeeModal('@employee.Id', '@employee.Name', '@employee.Role')"><i class="fas fa-edit"></i></button>
-                            <a asp-action="Delete" asp-controller="Employees" asp-route-id="@employee.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                            <button type="button" class="btn btn-sm btn-primary edit-employee-btn" data-toggle="modal" data-target="#editEmployeeModal"
+                                    data-employee-id="@account.User.Id"
+                                    data-employee-name="@account.User.Name"
+                                    data-employee-patronomic="@account.User.Patronomic"
+                                    data-employee-surname="@account.User.Surname"
+                                    data-employee-email="@account.Mail"
+                                    data-employee-phone="@account.Phone"
+                                    data-employee-password="@account.Password"
+                                    data-employee-role="@role.Name">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="post" asp-action="DeleteEmployee" asp-controller="Employees" asp-route-id="@account.User.Id" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
+
+    <!-- Модальное окно для добавления сотрудника -->
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEmployeeModalLabel">Добавить сотрудника</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form asp-action="AddEmployee" asp-controller="Employees" method="post">
+                        <div class="form-group">
+                            <label for="addEmployeeName">Имя</label>
+                            <input type="text" class="form-control" id="addEmployeeName" name="Name" placeholder="Введите имя">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeeSurname">Фамилия</label>
+                            <input type="text" class="form-control" id="addEmployeeSurname" name="Surname" placeholder="Введите фамилию">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeePatronomic">Отчество</label>
+                            <input type="text" class="form-control" id="addEmployeePatronomic" name="Patronomic" placeholder="Введите отчество">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeeEmail">Email</label>
+                            <input type="text" class="form-control" id="addEmployeeEmail" name="Email" placeholder="Введите почту">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeePhone">Телефон</label>
+                            <input type="tel" class="form-control" id="addEmployeePhone" name="Phone" placeholder="Введите телефон">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeePassword">Пароль</label>
+                            <input type="text" class="form-control" id="addEmployeePassword" name="Password" placeholder="Введите пароль">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeeRole">Должность</label>
+                            <select class="form-control" id="addEmployeeRole" name="RoleId">
+                                @foreach (Role role in ViewBag.Roles)
+                                {
+                                    <option value="@role.Id">@role.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Модальное окно для редактирования -->
+    <div class="modal fade" id="editEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editEmployeeModalLabel">Редактировать сотрудника</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form asp-action="EditEmployee" asp-controller="Employees" method="post">
+                        <input type="hidden" id="editEmployeeId" name="Id" />
+                        <div class="form-group">
+                            <label for="editEmployeeName">Имя</label>
+                            <input type="text" class="form-control" id="editEmployeeName" name="Name" placeholder="Введите имя">
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmployeeSurname">Фамилия</label>
+                            <input type="text" class="form-control" id="editEmployeeSurname" name="Surname" placeholder="Введите фамилию">
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmployeePatronomic">Отчество</label>
+                            <input type="text" class="form-control" id="editEmployeePatronomic" name="Patronomic" placeholder="Введите отчество">
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmployeeEmail">Email</label>
+                            <input type="text" class="form-control" id="editEmployeeEmail" name="Email" placeholder="Введите почту">
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmployeePhone">Телефон</label>
+                            <input type="tel" class="form-control" id="editEmployeePhone" name="Phone" placeholder="Введите телефон">
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmployeePassword">Пароль</label>
+                            <input type="password" class="form-control" id="editEmployeePassword" name="Password" placeholder="Введите пароль">
+                        </div>
+                        <div class="form-group">
+                            <label for="addEmployeeRole">Должность</label>
+                            <select class="form-control" id="addEmployeeRole" name="RoleId">
+                                @foreach (Role role in ViewBag.Roles)
+                                {
+                                    <option value="@role.Id">@role.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </section>
 
-<div class="modal fade" id="addEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="addEmployeeModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addEmployeeModalLabel">Добавить сотрудника</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="form-group">
-                        <label for="employeeName">Имя</label>
-                        <input type="text" class="form-control" id="employeeName" placeholder="Введите имя">
-                    </div>
-                    <div class="form-group">
-                        <label for="employeeEmail">Email</label>
-                        <input type="email" class="form-control" id="employeeEmail" placeholder="Введите email">
-                    </div>
-                    <div class="form-group">
-                        <label for="employeePassword">Пароль</label>
-                        <input type="password" class="form-control" id="employeePassword" placeholder="Введите пароль">
-                    </div>
-                    <div class="form-group">
-                        <label for="employeeRole">Роль</label>
-                        <select class="form-control" id="employeeRole">
-                            <option>Администратор</option>
-                            <option>Кладовщик</option>
-                            <option>Продавец</option>
-                            <!-- Добавьте роли из вашей базы данных -->
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.edit-employee-btn').click(function () {
+                var employeeId = $(this).data('employee-id');
+                var employeeName = $(this).data('employee-name');
+                var employeeSurname = $(this).data('employee-surname');
+                var employeePatronomic = $(this).data('employee-patronomic');
+                var employeeEmail = $(this).data('employee-email');
+                var employeePhone = $(this).data('employee-phone');
+                var employeePassword = $(this).data('employee-password');
+                var employeeRole = $(this).data('employee-role'); 
 
-<div class="modal fade" id="editEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editEmployeeModalLabel">Редактировать сотрудника</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <input type="hidden" id="editEmployeeId" />  @* Скрытое поле для хранения ID сотрудника *@
-                    <div class="form-group">
-                        <label for="editEmployeeName">Имя</label>
-                        <input type="text" class="form-control" id="editEmployeeName" placeholder="Введите имя">
-                    </div>
-                    <div class="form-group">
-                        <label for="editEmployeeEmail">Email</label>
-                        <input type="email" class="form-control" id="editEmployeeEmail" placeholder="Введите email">
-                    </div>
-                    <div class="form-group">
-                        <label for="editEmployeeRole">Роль</label>
-                        <select class="form-control" id="editEmployeeRole">
-                            <option>Администратор</option>
-                            <option>Кладовщик</option>
-                            <option>Продавец</option>
-                            <!-- Добавьте роли из вашей базы данных -->
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="saveEmployeeChanges()">Сохранить изменения</button>
-            </div>
-        </div>
-    </div>
-</div>
+                $('#editEmployeeId').val(employeeId);
+                $('#editEmployeeName').val(employeeName);
+                $('#editEmployeeSurname').val(employeeSurname);
+                $('#editEmployeePatronomic').val(employeePatronomic);
+                $('#editEmployeeEmail').val(employeeEmail);
+                $('#editEmployeePhone').val(employeePhone);
+                $('#editEmployeePassword').val(employeePassword);
+                $('#editEmployeeRole').val(employeeRole);
+
+                
+                $('#editEmployeeModal').modal('show');
+            });
+        });
+    </script>
+}
