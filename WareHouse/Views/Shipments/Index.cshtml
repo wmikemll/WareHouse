@@ -1,7 +1,8 @@
 ﻿<section id="shipments">
     <h2>Поставки</h2>
-    <p>Список последних поставок товаров.</p>
+    <p>Список поставок.</p>
     <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addShipmentModal">Добавить поставку</button>
+
     <div class="table-responsive">
         <table class="table table-striped table-bordered">
             <thead>
@@ -9,57 +10,139 @@
                     <th>ID</th>
                     <th>Дата</th>
                     <th>Статус</th>
+                    <th>Пользователь</th>
                     <th>Действия</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>2023-10-27</td>
-                    <td>В пути</td>
-                    <td>
-                        <button class="btn btn-sm btn-info"><i class="fas fa-info-circle"></i></button>
-                        <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-                <!-- Здесь будут данные из БД -->
+                @foreach (Shipment shipment in ViewBag.Shipments)
+                {
+                    <tr>
+                        <td>@shipment.Id</td>
+                        <td>@shipment.Date</td>
+                        <td>@shipment.Status?.Name</td>  @* Используем оператор ?. для избежания исключения, если Status равен null *@
+                        <td>@shipment.User?.Name</td>  @* Аналогично для User *@
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary edit-shipment-btn" data-toggle="modal" data-target="#editShipmentModal"
+                                    data-shipment-id="@shipment.Id"
+                                    data-shipment-date="@shipment.Date" @*  Дата должна быть в формате, понятном для input type="date" *@
+                                    data-shipment-status="@shipment.Statusid"
+                                    data-shipment-user="@shipment.Userid">
+                                @* Передаем ID пользователя и статуса *@
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="post" asp-action="DeleteShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
-</section>
 
-<div class="modal fade" id="addShipmentModal" tabindex="-1" role="dialog" aria-labelledby="addShipmentModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addShipmentModalLabel">Добавить поставку</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="form-group">
-                        <label for="shipmentDate">Дата поставки</label>
-                        <input type="date" class="form-control" id="shipmentDate">
-                    </div>
-                    <div class="form-group">
-                        <label for="shipmentStatus">Статус</label>
-                        <select class="form-control" id="shipmentStatus">
-                            <option>В пути</option>
-                            <option>Получено</option>
-                            <option>Обработка</option>
-                            <!-- Добавьте статусы из вашей базы данных -->
-                        </select>
-                    </div>
-                    <!-- Добавьте поля для товаров в поставке -->
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary">Сохранить</button>
+    <!-- Модальное окно для добавления поставки -->
+    <div class="modal fade" id="addShipmentModal" tabindex="-1" role="dialog" aria-labelledby="addShipmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addShipmentModalLabel">Добавить поставку</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" asp-action="CreateShipment" asp-controller="Shipments">
+                        <div class="form-group">
+                            <label for="shipmentDate">Дата</label>
+                            <input type="date" class="form-control" id="shipmentDate" name="Date">
+                        </div>
+                        <div class="form-group">
+                            <label for="shipmentUser">Пользователь</label>
+                            <select class="form-control" id="shipmentUser" name="EmployeeId">
+                                @* Здесь нужно добавить опции из ViewBag.Users *@
+                                @foreach (var user in ViewBag.Users)
+                                {
+                                    <option value="@user.Id">@user.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Модальное окно для редактирования поставки -->
+    <div class="modal fade" id="editShipmentModal" tabindex="-1" role="dialog" aria-labelledby="editShipmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editShipmentModalLabel">Редактировать поставку</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @* Форма для редактирования поставки (нужно будет добавить asp-items для dropdowns) *@
+                    <form method="post" asp-action="EditShipment" asp-controller="Shipments">
+                        <input type="hidden" id="editShipmentId" name="Id" />
+                        <div class="form-group">
+                            <label for="editShipmentDate">Дата</label>
+                            <input type="date" class="form-control" id="editShipmentDate" name="Date">
+                        </div>
+                        <div class="form-group">
+                            <label for="editShipmentStatus">Статус</label>
+                            <select class="form-control" id="editShipmentStatus" name="StatusId">
+                                @* Здесь нужно добавить опции из ViewBag.Statuses (и отметить текущий выбранный) *@
+                                @foreach (var status in ViewBag.Statuses)
+                                {
+                                    <option value="@status.Id">@status.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editShipmentUser">Пользователь</label>
+                            <select class="form-control" id="editShipmentUser" name="UserId">
+                                @* Здесь нужно добавить опции из ViewBag.Users (и отметить текущий выбранный) *@
+                                @foreach (var user in ViewBag.Users)
+                                {
+                                    <option value="@user.Id">@user.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Обработчик нажатия на кнопку редактирования
+            $('.edit-shipment-btn').click(function () {
+                var shipmentId = $(this).data('shipment-id');
+                var shipmentDate = $(this).data('shipment-date');
+                var shipmentStatus = $(this).data('shipment-status');
+                var shipmentUser = $(this).data('shipment-user');
+
+
+                $('#editShipmentId').val(shipmentId);
+                $('#editShipmentDate').val(shipmentDate);  // Устанавливаем значение даты
+                $('#editShipmentStatus').val(shipmentStatus);
+                $('#editShipmentUser').val(shipmentUser);
+
+
+                //  Дополнительно:  Выбрать нужные опции в select
+                $('#editShipmentStatus option[value="' + shipmentStatus + '"]').prop('selected', true);
+                $('#editShipmentUser option[value="' + shipmentUser + '"]').prop('selected', true);
+
+            });
+        });
+    </script>
+}
