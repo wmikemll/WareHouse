@@ -4,14 +4,14 @@
     <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addShipmentModal">Добавить поставку</button>
 
     <div class="table-responsive">
-        <table class="table table-striped table-bordered">
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Дата</th>
                     <th>Статус</th>
                     <th>Пользователь</th>
-                    <th>Действия</th>
+                    <th>Товары</th>
                 </tr>
             </thead>
             <tbody>
@@ -19,22 +19,23 @@
                 {
                     <tr>
                         <td>@shipment.Id</td>
-                        <td>@shipment.Date</td>
-                        <td>@shipment.Status?.Name</td>  @* Используем оператор ?. для избежания исключения, если Status равен null *@
-                        <td>@shipment.User?.Name</td>  @* Аналогично для User *@
+                        <td>@shipment.Date.ToShortDateString()</td>
+                        <td>@shipment.Status.Name</td>
+                        <td>@shipment.User.Surname @shipment.User.Name</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-primary edit-shipment-btn" data-toggle="modal" data-target="#editShipmentModal"
-                                    data-shipment-id="@shipment.Id"
-                                    data-shipment-date="@shipment.Date" @*  Дата должна быть в формате, понятном для input type="date" *@
-                                    data-shipment-status="@shipment.Statusid"
-                                    data-shipment-user="@shipment.Userid">
-                                @* Передаем ID пользователя и статуса *@
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <form method="post" asp-action="DeleteShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                            </form>
-
+                            @if (shipment.Shipmentitems.Any())
+                            {
+                                <ul class="list-unstyled">
+                                    @foreach (var item in shipment.Shipmentitems)
+                                    {
+                                        <li>@item.Product.Name - @item.Count шт.</li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <p>Нет товаров</p>
+                            }
                         </td>
                     </tr>
                 }

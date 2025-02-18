@@ -22,7 +22,8 @@ namespace WareHouse.Controllers
             // Загружаем поставки, статусы и пользователей (вместо ViewBags лучше использовать ViewModel)
             var shipments = await _DbContext.Shipments
                 .Include(s => s.Status) // Подгружаем статус
-                .Include(s => s.User) // Подгружаем пользователя
+                .Include(s => s.User) 
+                .Include(s => s.Shipmentitems)// Подгружаем пользователя
                 .ToListAsync();
             ViewBag.Products = _DbContext.Products.ToList();
             // Передаем данные в представление через ViewBag.
@@ -40,10 +41,11 @@ namespace WareHouse.Controllers
                 {
                     Id = _random.Next(10000,999999).ToString(),
                     Date = DateOnly.FromDateTime(DateTime.Now),
-                    Statusid = 0,
+                    Statusid = 1,
                     Userid = "668859"
                 };
-
+                _DbContext.Shipments.Add(shipment);
+                _DbContext.SaveChanges();
                 // Добавляем ShipmentItems
                 foreach (var productId in ProductIds)
                 {
@@ -53,16 +55,14 @@ namespace WareHouse.Controllers
 
                         _DbContext.Shipmentitems.Add(new Shipmentitem
                         {
-                            Id = Guid.NewGuid().ToString(),
+                            Id = _random.Next(100000,999999).ToString(),
                             Productid = productId,
                             Shipmentid = shipment.Id,
                             Count = quantity // Используем указанное количество
                         });
                     }
                 }
-
-                _DbContext.Shipments.Add(shipment);
-                await _DbContext.SaveChangesAsync();
+                _DbContext.SaveChanges();
                 return RedirectToAction("Index");
             }
             else
