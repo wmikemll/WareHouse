@@ -55,19 +55,40 @@
                 <div class="modal-body">
                     <form method="post" asp-action="CreateShipment" asp-controller="Shipments">
                         <div class="form-group">
-                            <label for="shipmentDate">Дата</label>
-                            <input type="date" class="form-control" id="shipmentDate" name="Date">
+                            <label>Товары:</label>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Товар</th>
+                                        <th>Количество</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (Product product in ViewBag.Products)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @product.Name
+                                                <input type="hidden" name="ProductIds" value="@product.Id" />
+                                            </td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <button type="button" class="btn btn-outline-secondary quantity-minus" data-product-id="@product.Id"><i class="fas fa-minus"></i></button>
+                                                    </div>
+                                                    <input type="number" class="form-control quantity-input" name="Quantities[@product.Id]" value="0" min="0" data-product-id="@product.Id">
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-outline-secondary quantity-plus" data-product-id="@product.Id"><i class="fas fa-plus"></i></button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="form-group">
-                            <label for="shipmentUser">Пользователь</label>
-                            <select class="form-control" id="shipmentUser" name="EmployeeId">
-                                @* Здесь нужно добавить опции из ViewBag.Users *@
-                                @foreach (var user in ViewBag.Users)
-                                {
-                                    <option value="@user.Id">@user.Name</option>
-                                }
-                            </select>
-                        </div>
+
+
                         <button type="submit" class="btn btn-primary">Сохранить</button>
                     </form>
                 </div>
@@ -76,52 +97,30 @@
     </div>
 
     <!-- Модальное окно для редактирования поставки -->
-    <div class="modal fade" id="editShipmentModal" tabindex="-1" role="dialog" aria-labelledby="editShipmentModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editShipmentModalLabel">Редактировать поставку</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    @* Форма для редактирования поставки (нужно будет добавить asp-items для dropdowns) *@
-                    <form method="post" asp-action="EditShipment" asp-controller="Shipments">
-                        <input type="hidden" id="editShipmentId" name="Id" />
-                        <div class="form-group">
-                            <label for="editShipmentDate">Дата</label>
-                            <input type="date" class="form-control" id="editShipmentDate" name="Date">
-                        </div>
-                        <div class="form-group">
-                            <label for="editShipmentStatus">Статус</label>
-                            <select class="form-control" id="editShipmentStatus" name="StatusId">
-                                @* Здесь нужно добавить опции из ViewBag.Statuses (и отметить текущий выбранный) *@
-                                @foreach (var status in ViewBag.Statuses)
-                                {
-                                    <option value="@status.Id">@status.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="editShipmentUser">Пользователь</label>
-                            <select class="form-control" id="editShipmentUser" name="UserId">
-                                @* Здесь нужно добавить опции из ViewBag.Users (и отметить текущий выбранный) *@
-                                @foreach (var user in ViewBag.Users)
-                                {
-                                    <option value="@user.Id">@user.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 </section>
 
 @section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Обработчики кнопок "+", "-"
+            $('.quantity-plus').click(function () {
+                var productId = $(this).data('product-id');
+                var quantityInput = $('.quantity-input[data-product-id="' + productId + '"]');
+                var currentValue = parseInt(quantityInput.val());
+                quantityInput.val(currentValue + 1);
+            });
+
+            $('.quantity-minus').click(function () {
+                var productId = $(this).data('product-id');
+                var quantityInput = $('.quantity-input[data-product-id="' + productId + '"]');
+                var currentValue = parseInt(quantityInput.val());
+                if (currentValue > 0) {
+                    quantityInput.val(currentValue - 1);
+                }
+            });
+        });
+    </script>
     <script>
         $(document).ready(function () {
             // Обработчик нажатия на кнопку редактирования

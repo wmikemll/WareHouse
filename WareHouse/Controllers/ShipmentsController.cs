@@ -24,35 +24,56 @@ namespace WareHouse.Controllers
                 .Include(s => s.Status) // Подгружаем статус
                 .Include(s => s.User) // Подгружаем пользователя
                 .ToListAsync();
-
-            // Получаем статусы и пользователей для выпадающих списков
-            var statuses = await _DbContext.Statuses.ToListAsync();
-            var users = await _DbContext.Users.ToListAsync();  // Предполагаем, что есть таблица Users
-
+            ViewBag.Products = _DbContext.Products.ToList();
             // Передаем данные в представление через ViewBag.
             ViewBag.Shipments = shipments;
-            ViewBag.Statuses = statuses;
-            ViewBag.Users = users;
-
             return View();
         }
 
-        // POST: Shipments/CreateShipment
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateShipment(string EmployeeId)
+        public async Task<IActionResult> CreateShipment(string[] ProductIds, Dictionary<string, int> Quantities)
         {
-            _DbContext.Shipments.Add(new Shipment
+            if (ModelState.IsValid)
             {
-                Id = _random.Next(100000, 999999).ToString(),
-                Date = DateOnly.FromDateTime(DateTime.Now),
-                Userid = EmployeeId,
-                Statusid = _DbContext.Statuses.FirstOrDefault(s => s.Name.Trim() == "Отправлена").Id
-            });
-            _DbContext.SaveChanges();
-            return RedirectToAction("Index");
+                var shipment = new Shipment
+                {
+                    Id = _random.Next(10000,999999).ToString(),
+                    Date = DateOnly.FromDateTime(DateTime.Now),
+                    Statusid = 0,
+                    Userid = "668859"
+                };
 
+                // Добавляем ShipmentItems
+                foreach (var productId in ProductIds)
+                {
+                    if (Quantities.ContainsKey(productId) && Quantities[productId] > 0)
+                    {
+                        int quantity = Quantities[productId];
+
+                        _DbContext.Shipmentitems.Add(new Shipmentitem
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Productid = productId,
+                            Shipmentid = shipment.Id,
+                            Count = quantity // Используем указанное количество
+                        });
+                    }
+                }
+
+                _DbContext.Shipments.Add(shipment);
+                await _DbContext.SaveChangesAsync();
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                ViewBag.Statuses = await _DbContext.Statuses.ToListAsync();
+                ViewBag.Users = await _DbContext.Users.ToListAsync();
+                ViewBag.Products = await _DbContext.Products.ToListAsync();
+                return View();
+            }
         }
+
 
         // POST: Shipments/EditShipment
         [HttpPost]
