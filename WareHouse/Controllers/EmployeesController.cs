@@ -17,7 +17,7 @@ namespace WareHouse.Controllers
         }
         public IActionResult Index()
         {
-            ViewBag.Accounts = _dbContext.Accounts.Include(e => e.User).ToList();
+            ViewBag.Accounts = _dbContext.Accounts.Include(e => e.User).Where(a => a.Isactive == true).ToList();
             ViewBag.Roles = _dbContext.Roles.ToList();
             return View();
         }
@@ -52,12 +52,9 @@ namespace WareHouse.Controllers
         public IActionResult DeleteEmployee(string id)
         {
             var account = _dbContext.Accounts.FirstOrDefault(x => x.Userid == id);
-            var employee = _dbContext.Users.FirstOrDefault(x => x.Id.Trim() == account.Userid);
-            if (account != null && employee != null)
+            if (account != null)
             {
-                _dbContext.Accounts.Remove(account);
-                _dbContext.SaveChanges();
-                _dbContext.Users.Remove(employee);
+                account.Isactive = false;
                 _dbContext.SaveChanges();
             }
             else

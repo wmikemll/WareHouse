@@ -12,6 +12,7 @@ public partial class Shipment
     public int? Statusid { get; set; }
 
     public string? Userid { get; set; }
+    public bool isHidden { get; set; } = false;
 
     public virtual ICollection<Shipmentitem> Shipmentitems { get; set; } = new List<Shipmentitem>();
 

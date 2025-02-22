@@ -14,6 +14,7 @@ public partial class Product
     public int Count { get; set; }
 
     public int? Categoryid { get; set; }
+    public bool isHidden { get; set; } = false!;    
 
     public virtual Category? Category { get; set; }
 

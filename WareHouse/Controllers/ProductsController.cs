@@ -20,7 +20,7 @@ namespace WareHouse.Controllers
         public IActionResult Index()
         {
             ViewBag.Categories = _dbContext.Categories.ToList();
-            ViewBag.Products = _dbContext.Products.Include(p => p.Category).ToList();
+            ViewBag.Products = _dbContext.Products.Include(p => p.Category).Where(p => p.isHidden == false).ToList();
             return View();
         }
 
@@ -45,7 +45,7 @@ namespace WareHouse.Controllers
             var product = _dbContext.Products.FirstOrDefault(x => x.Id.Trim() == id.Trim());
             if (product != null)
             {
-                _dbContext.Products.Remove(product);
+                product.isHidden = true; 
                 _dbContext.SaveChanges();
             }
             else

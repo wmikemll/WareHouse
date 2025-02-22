@@ -37,6 +37,18 @@
                                 <p>Нет товаров</p>
                             }
                         </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary edit-product-btn" data-toggle="modal" data-target="#editShipmentModal"
+                                    data-shipment-id="@shipment.Id"
+                                    data-shipment-date="@shipment.Date"
+                                    data-shipment-status="@shipment.Statusid"
+                                    data-shipment-user="@shipment.Userid"
+                                    data-shipment-items="@ViewBag.ShipmentItemsJson[shipment.Id]">
+                                @* Получаем JSON по ID *@
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <a asp-action="HideShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -98,10 +110,117 @@
     </div>
 
     <!-- Модальное окно для редактирования поставки -->
-    
+    <div class="modal fade" id="editShipmentModal" tabindex="-1" role="dialog" aria-labelledby="editShipmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            @* modal-lg для большего окна, если нужно *@
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editShipmentModalLabel">Редактировать поставку</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" asp-action="EditShipment" asp-controller="Shipments" id="editShipmentForm">
+                        <input type="hidden" id="editShipmentId" name="Id" />
+
+                        <div class="form-group">
+                            <label for="editShipmentStatus">Статус</label>
+                            <select class="form-control" id="editShipmentStatus" name="StatusId">
+                                @foreach (var status in ViewBag.Statuses)
+                                {
+                                    <option value="@status.Id">@status.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editShipmentUser">Пользователь</label>
+                            <select class="form-control" id="editShipmentUser" name="UserId">
+                                @foreach (var user in ViewBag.Users)
+                                {
+                                    <option value="@user.Id">@user.Surname @user.Name</option>  @* Отображаем полное имя пользователя *@
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Товары:</label>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Товар</th>
+                                        <th>Количество</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="editShipmentItems">
+                                    @* Сюда будут добавлены строки с товарами через JavaScript *@
+                                </tbody>
+                            </table>
+                        </div>
+
+
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </section>
 
 @section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.edit-product-btn').click(function () {
+                var shipmentId = $(this).data('shipment-id');
+                var shipmentStatus = $(this).data('shipment-status');
+                var shipmentUser = $(this).data('shipment-user');
+                var shipmentItems = $(this).data('shipment-items'); 
+
+
+
+                $('#editShipmentId').val(shipmentId);
+                $('#editShipmentStatus').val(shipmentStatus);
+                $('#editShipmentUser').val(shipmentUser);
+
+
+
+                //  Заполняем таблицу с товарами (предполагаем, что shipmentItems - это JSON)
+                var shipmentItemsTableBody = $('#editShipmentItems');
+                shipmentItemsTableBody.empty();  //  Очищаем таблицу перед заполнением
+
+                 if (shipmentItems) { //  Проверяем, что shipmentItems не null или undefined
+                    $.each(shipmentItems, function (index, item) {
+                        var row = `
+                            <tr>
+                                <td>
+                                    ${item.Product.Name}
+                                    <input type="hidden" name="ProductIds" value="${item.Productid}" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control" name="Quantities[${item.Productid}]" value="${item.Count}" min="0">
+                                </td>
+                            </tr>
+                        `;
+                        shipmentItemsTableBody.append(row);
+                    });
+                } else {
+                    shipmentItemsTableBody.append('<tr><td colspan="2">Нет товаров в поставке</td></tr>');
+                }
+
+                $('#editShipmentModal').modal('show'); // Показываем модальное окно
+            });
+
+
+             // Добавляем код для отслеживания изменений в модальном окне
+            $('#editShipmentModal').on('hidden.bs.modal', function () {
+                // Remove dynamically added content to prevent conflicts
+                $("#editShipmentItems").empty();
+            });
+        });
+    </script>
     <script>
         $(document).ready(function () {
             // Обработчики кнопок "+", "-"
