@@ -101,7 +101,7 @@ namespace WareHouse.Controllers
         // POST: Shipments/EditShipment
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditShipment(string Id, int StatusId, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> EditShipment(string Id, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
             {
@@ -116,7 +116,6 @@ namespace WareHouse.Controllers
                 }
 
                 // 2. Обновляем основные данные поставки
-                shipment.Statusid = StatusId;
                 shipment.Userid = UserId;
 
                 // 3. Обновляем список товаров в поставке
@@ -175,8 +174,70 @@ namespace WareHouse.Controllers
             return View("Index"); // Возвращаемся на Index с заполненными данными
         }
 
-        // POST: Shipments/DeleteShipment
-        public IActionResult HideShipment(string id)
+
+        public IActionResult CancelShipment(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var shipment = _DbContext.Shipments.FirstOrDefault(s => s.Id.Trim() == id.Trim());
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            // Получаем ID статуса "Отменено" (предположим, что он равен 4, измените его, если у вас другой ID)
+            int canceledStatusId = 3; // Замените на ваш фактический ID статуса
+
+            // Обновляем статус поставки на "Отменено"
+            shipment.Statusid = canceledStatusId;
+            _DbContext.Update(shipment);
+
+            try
+            {
+                _DbContext.SaveChanges();
+            }
+            catch (Exception)
+            {
+                // Обработка ошибок при обновлении
+                return StatusCode(500, "Ошибка при отмене поставки.");
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult MarkAsArrived(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var shipment = _DbContext.Shipments.FirstOrDefault(s => s.Id.Trim() == id.Trim());
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            int arrivedStatusId = 2;
+
+            shipment.Statusid = arrivedStatusId;
+            _DbContext.Update(shipment);
+
+            try
+            {
+                _DbContext.SaveChanges();
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Ошибка при изменении статуса поставки.");
+            }
+
+            return RedirectToAction("Index");
+        }
+        public IActionResult DeleteShipment(string id)
         {
             if (id == null)
             {
@@ -187,10 +248,6 @@ namespace WareHouse.Controllers
             if (shipment == null)
             {
                 return NotFound();
-            }
-            if (shipment.Statusid != 3) 
-            {
-                throw new Exception("Поставка должна быть отменена перед удалением");
             }
             try
             {
@@ -204,6 +261,77 @@ namespace WareHouse.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> ConfirmUnloading(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var shipment = await _DbContext.Shipments
+                .Include(s => s.Shipmentitems)
+                    .ThenInclude(si => si.Product)  // Важно для получения информации о товаре
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            int unloadedStatusId = 4; // Замените на ваш фактический ID статуса
+
+            // Проверяем, что поставка еще не разгружена
+            if (shipment.Statusid == unloadedStatusId)
+            {
+                ModelState.AddModelError("", "Поставка уже разгружена.");
+                return View("Index");  //  Возвращаемся к списку с сообщением об ошибке
+            }
+
+            // Начинаем транзакцию для обеспечения целостности данных
+            using (var transaction = await _DbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // 1. Обновляем статус поставки на "Разгружено"
+                    shipment.Statusid = unloadedStatusId;
+                    _DbContext.Update(shipment);
+
+                    // 2. Добавляем товары на склад (или обновляем их количество)
+                    foreach (var shipmentItem in shipment.Shipmentitems)
+                    {
+                        var product = shipmentItem.Product; // Получаем товар из ShipmentItem
+                        if (product != null)
+                        {
+                            // Получаем существующую запись о товаре на складе (если есть)
+                            var stockItem = await _DbContext.Products
+                                .FirstOrDefaultAsync(s => s.Id == product.Id);
+
+                            // Если товар уже есть на складе, увеличиваем его количество
+                            stockItem.Count += shipmentItem.Count;
+                            _DbContext.Update(stockItem);
+                        }
+                    }
+
+                    // Сохраняем изменения в базе данных
+                    await _DbContext.SaveChangesAsync();
+
+                    // Подтверждаем транзакцию
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Откатываем транзакцию в случае ошибки
+                    await transaction.RollbackAsync();
+
+                    // Обрабатываем ошибку (например, логируем ее)
+                    ModelState.AddModelError("", "Ошибка при подтверждении разгрузки: " + ex.Message);
+                    return View("Index");  //  Возвращаемся к списку с сообщением об ошибке
+                }
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         private bool ShipmentExists(string id)

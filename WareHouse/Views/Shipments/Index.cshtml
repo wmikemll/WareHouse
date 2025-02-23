@@ -38,16 +38,47 @@
                             }
                         </td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-primary edit-product-btn" data-toggle="modal" data-target="#editShipmentModal"
-                                    data-shipment-id="@shipment.Id"
-                                    data-shipment-date="@shipment.Date"
-                                    data-shipment-status="@shipment.Statusid"
-                                    data-shipment-user="@shipment.Userid"
-                                    data-shipment-items="@ViewBag.ShipmentItemsJson[shipment.Id]">
-                                @* Получаем JSON по ID *@
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <a asp-action="HideShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                            @* Кнопки для различных статусов поставки *@
+                            @if (shipment.Statusid == 2) // Если "Пришла"
+                            {
+                                @* Кнопка "Разгрузить поставку" *@
+                                <form method="post" asp-action="ConfirmUnloading" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Разгрузить поставку</button>
+                                </form>
+                            }
+                            else if (shipment.Statusid == 3) // Если "Отменена"
+                            {
+                                <form method="post" asp-action="DeleteShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Удалить поставку</button>
+                                </form>
+                            }
+                            else if (shipment.Statusid == 4) // Если "Разгружена"
+                            {
+                                @* Кнопка "Скрыть" *@
+                                <form method="post" asp-action="DeleteShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-eye-slash"></i> Скрыть</button>
+                                </form>
+                            }
+                            else 
+                            {
+                                <button type="button" class="btn btn-sm btn-primary edit-product-btn" data-toggle="modal" data-target="#editShipmentModal"
+                                        data-shipment-id="@shipment.Id"
+                                        data-shipment-date="@shipment.Date"
+                                        data-shipment-status="@shipment.Statusid"
+                                        data-shipment-user="@shipment.Userid"
+                                        data-shipment-items="@ViewBag.ShipmentItemsJson[shipment.Id]">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+
+                                <form method="post" asp-action="CancelShipment" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-ban"></i> Отменить поставку</button>
+                                </form>
+
+                                @* Кнопка "Поставка пришла"  *@
+                                <form method="post" asp-action="MarkAsArrived" asp-controller="Shipments" asp-route-id="@shipment.Id" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-truck"></i> Поставка пришла</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }
@@ -123,17 +154,6 @@
                 <div class="modal-body">
                     <form method="post" asp-action="EditShipment" asp-controller="Shipments" id="editShipmentForm">
                         <input type="hidden" id="editShipmentId" name="Id" />
-
-                        <div class="form-group">
-                            <label for="editShipmentStatus">Статус</label>
-                            <select class="form-control" id="editShipmentStatus" name="StatusId">
-                                @foreach (var status in ViewBag.Statuses)
-                                {
-                                    <option value="@status.Id">@status.Name</option>
-                                }
-                            </select>
-                        </div>
-
                         <div class="form-group">
                             <label for="editShipmentUser">Пользователь</label>
                             <select class="form-control" id="editShipmentUser" name="UserId">
