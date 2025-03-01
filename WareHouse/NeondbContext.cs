@@ -134,6 +134,10 @@ public partial class NeondbContext : DbContext
             entity.HasKey(e => e.Id).HasName("sales_pkey");
 
             entity.ToTable("sales");
+            entity.Property(e => e.IsHidden)
+                .HasDefaultValue(false)
+                .HasColumnName("isHidden");
+            entity.Property(e => e.StatusId).HasColumnName("statusId");
 
             entity.Property(e => e.Id)
                 .HasMaxLength(10)
@@ -143,6 +147,9 @@ public partial class NeondbContext : DbContext
                 .HasMaxLength(10)
                 .HasColumnName("userid");
 
+            entity.HasOne(d => d.Status).WithMany(p => p.Sales)
+                .HasForeignKey(d => d.StatusId)
+                .HasConstraintName("sales_statusid_fkey");
             entity.HasOne(d => d.User).WithMany(p => p.Sales)
                 .HasForeignKey(d => d.Userid)
                 .HasConstraintName("sales_userid_fkey");

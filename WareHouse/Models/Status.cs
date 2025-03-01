@@ -10,4 +10,6 @@ public partial class Status
     public string Name { get; set; } = null!;
 
     public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
+    public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
+
 }
