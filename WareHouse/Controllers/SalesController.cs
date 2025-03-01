@@ -22,6 +22,7 @@ namespace WareHouse.Controllers
                 .Include(s => s.User)
                 .Include(s => s.Saleitems)
                     .ThenInclude(si => si.Product)
+                .Where(s => s.IsHidden == false)
                 .ToListAsync();
 
             // Создаем словарь для хранения JSON-представлений SaleItems
@@ -62,7 +63,7 @@ namespace WareHouse.Controllers
         // POST: Sales/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(DateTime SaleDate, int StatusId, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> Create(string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
             {
@@ -70,8 +71,8 @@ namespace WareHouse.Controllers
                 var sale = new Sale
                 {
                     Id = random.Next(100000, 999999).ToString(),
-                    Date = DateOnly.FromDateTime(SaleDate),
-                    StatusId = StatusId,
+                    Date = DateOnly.FromDateTime(DateTime.Now),
+                    StatusId = 5,
                     Userid = UserId
                 };
 
@@ -121,96 +122,92 @@ namespace WareHouse.Controllers
         }
 
         // POST: Sales/Cancel
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Cancel(string id)
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        return NotFound();
-        //    }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
 
-        //    var sale = await _dbContext.Sales
-        //        .Include(s => s.Saleitems)
-        //            .ThenInclude(si => si.Product)
-        //        .FirstOrDefaultAsync(s => s.Id == id);
+            var sale = await _dbContext.Sales
+                .Include(s => s.Saleitems)
+                    .ThenInclude(si => si.Product)
+                .FirstOrDefaultAsync(s => s.Id == id);
 
-        //    if (sale == null)
-        //    {
-        //        return NotFound();
-        //    }
+            if (sale == null)
+            {
+                return NotFound();
+            }
 
-        //    // Получаем ID статуса "Отменена"
-        //    int canceledStatusId = 4;
+            // Получаем ID статуса "Отменена"
+            int canceledStatusId = 3;
 
-        //    // Возвращаем товары на склад
-        //    foreach (var saleItem in sale.Saleitems)
-        //    {
-        //        var stockItem = await _dbContext.StockItems.FirstOrDefaultAsync(s => s.ProductId == saleItem.Productid);
-        //        if (stockItem != null)
-        //        {
-        //            stockItem.Quantity += saleItem.Count;
-        //            _dbContext.Update(stockItem);
-        //        }
-        //        // Если товара нет на складе, это странная ситуация, но можно ее обработать
-        //    }
+            // Возвращаем товары на склад
+            foreach (var saleItem in sale.Saleitems)
+            {
+                var stockItem = await _dbContext.Products.FirstOrDefaultAsync(s => s.Id == saleItem.Productid);
+                if (stockItem != null)
+                {
+                    stockItem.Count += saleItem.Count;
+                    _dbContext.Update(stockItem);
+                }
+                // Если товара нет на складе, это странная ситуация, но можно ее обработать
+            }
 
-        //    // Изменяем статус продажи на "Отменена"
-        //    sale.Statusid = canceledStatusId;
-        //    _dbContext.Update(sale);
+            // Изменяем статус продажи на "Отменена"
+            sale.StatusId = canceledStatusId;
+            _dbContext.Update(sale);
 
-        //    try
-        //    {
-        //        await _dbContext.SaveChangesAsync();
-        //    }
-        //    catch (Exception)
-        //    {
-        //        // Обрабатываем ошибки при сохранении
-        //        return StatusCode(500, "Ошибка при отмене продажи.");
-        //    }
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Обрабатываем ошибки при сохранении
+                return StatusCode(500, "Ошибка при отмене продажи.");
+            }
 
-        //    return RedirectToAction(nameof(Index));
-        //}
+            return RedirectToAction(nameof(Index));
+        }
 
-        //// POST: Sales/Hide
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Hide(string id)
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        return NotFound();
-        //    }
+        // POST: Sales/Hide
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Hide(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
 
-        //    var sale = await _dbContext.Sales.FindAsync(id);
-        //    if (sale == null)
-        //    {
-        //        return NotFound();
-        //    }
+            var sale = await _dbContext.Sales.FindAsync(id);
+            if (sale == null)
+            {
+                return NotFound();
+            }
+            sale.IsHidden = true;
+            _dbContext.Update(sale);
 
-        //    // ID статуса "Скрыта"
-        //    int hiddenStatusId = 5;
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Обрабатываем ошибки
+                return StatusCode(500, "Ошибка при изменении статуса продажи.");
+            }
 
-        //    sale.Statusid = hiddenStatusId;
-        //    _dbContext.Update(sale);
+            return RedirectToAction(nameof(Index));
+        }
 
-        //    try
-        //    {
-        //        await _dbContext.SaveChangesAsync();
-        //    }
-        //    catch (Exception)
-        //    {
-        //        // Обрабатываем ошибки
-        //        return StatusCode(500, "Ошибка при изменении статуса продажи.");
-        //    }
-
-        //    return RedirectToAction(nameof(Index));
-        //}
-
-        //private bool SaleExists(string id)
-        //{
-        //    return _dbContext.Sales.Any(e => e.Id == id);
-        //}
+        private bool SaleExists(string id)
+        {
+            return _dbContext.Sales.Any(e => e.Id == id);
+        }
     }
 }
 

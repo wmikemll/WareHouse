@@ -70,19 +70,6 @@
                 <div class="modal-body">
                     <form method="post" asp-action="Create" asp-controller="Sales">
                         <div class="form-group">
-                            <label for="SaleDate">Дата</label>
-                            <input type="date" class="form-control" id="SaleDate" name="SaleDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="StatusId">Статус</label>
-                            <select class="form-control" id="StatusId" name="StatusId">
-                                @foreach (var status in ViewBag.Statuses)
-                                {
-                                    <option value="@status.Id">@status.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label for="UserId">Пользователь</label>
                             <select class="form-control" id="UserId" name="UserId">
                                 @foreach (var user in ViewBag.Users)
@@ -101,22 +88,31 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var product in ViewBag.Products)
+                                    @foreach (Product product in ViewBag.Products)
                                     {
                                         <tr>
                                             <td>
                                                 @product.Name
                                                 <input type="hidden" name="ProductIds" value="@product.Id" />
                                             </td>
+                                            @if (product.Count > 0) 
+                                            {
+                                                <td>
+                                                    <input type="number" class="form-control" name="Quantities[@product.Id]" value="0" min="0" max="@product.Count">
+                                                </td>
+                                            }
+                                            else
+                                            {
                                             <td>
-                                                <input type="number" class="form-control" name="Quantities[@product.Id]" value="0" min="0">
+                                                <p>Товар закончился</p>
                                             </td>
+                                            } 
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <button type="submit" class="btn btn-primary">Продать</button>
                     </form>
                 </div>
             </div>
