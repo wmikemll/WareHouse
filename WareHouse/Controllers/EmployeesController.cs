@@ -1,13 +1,15 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
+    [Authorize(Policy = "AdminPolicy")] // Доступ только для Admin
     public class EmployeesController : Controller
     {
-        private readonly NeondbContext _dbContext;
+        private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
         private readonly Random _random;
 
         public EmployeesController(NeondbContext dbContext)
@@ -15,6 +17,7 @@ namespace WareHouse.Controllers
             _random = new Random();
             _dbContext = dbContext;
         }
+
         public IActionResult Index()
         {
             ViewBag.Accounts = _dbContext.Accounts.Include(e => e.User).Where(a => a.Isactive == true).ToList();
@@ -23,7 +26,7 @@ namespace WareHouse.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddEmployee(string Name, string Surname, string Patronomic, string Email, string Password, string Phone,int RoleId)
+        public IActionResult AddEmployee(string Name, string Surname, string Patronomic, string Email, string Password, string Phone, int RoleId)
         {
             var employee = new User()
             {
@@ -35,7 +38,7 @@ namespace WareHouse.Controllers
             };
             _dbContext.Users.Add(employee);
             _dbContext.SaveChanges();
-            _dbContext.Accounts.Add(new Account() 
+            _dbContext.Accounts.Add(new Account()
             {
                 Id = _random.Next(100000, 999999).ToString(),
                 Mail = Email,
@@ -63,7 +66,7 @@ namespace WareHouse.Controllers
         }
 
         [HttpPost]
-        public IActionResult EditEmployee(string id,string Name, string Surname, string Patronomic, string Email, string Password, string Phone, int RoleId)
+        public IActionResult EditEmployee(string id, string Name, string Surname, string Patronomic, string Email, string Password, string Phone, int RoleId)
         {
             var account = _dbContext.Accounts.FirstOrDefault(x => x.Userid == id);
             var employee = _dbContext.Users.FirstOrDefault(x => x.Id.Trim() == account.Userid);

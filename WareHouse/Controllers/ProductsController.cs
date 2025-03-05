@@ -1,22 +1,23 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace WareHouse.Controllers
 {
+    [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, SalesManagerPolicy, WarehouseWorkerPolicy, AccountantPolicy")] // Доступ для всех, кто может просматривать товары
     public class ProductsController : Controller
     {
-        private readonly NeondbContext _dbContext;
+        private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
         private readonly Random _random;
 
         public ProductsController(NeondbContext dbContext)
         {
             _random = new Random();
             _dbContext = dbContext;
-
-
         }
+
         public IActionResult Index()
         {
             ViewBag.Categories = _dbContext.Categories.ToList();
@@ -24,8 +25,9 @@ namespace WareHouse.Controllers
             return View();
         }
 
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
         [HttpPost]
-        public IActionResult AddProduct(string Name,decimal Price, int Count, int Category) 
+        public IActionResult AddProduct(string Name, decimal Price, int Count, int Category)
         {
             _dbContext.Products.Add(new Models.Product()
             {
@@ -40,12 +42,13 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        public IActionResult DeleteProduct(string id) 
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
+        public IActionResult DeleteProduct(string id)
         {
             var product = _dbContext.Products.FirstOrDefault(x => x.Id.Trim() == id.Trim());
             if (product != null)
             {
-                product.isHidden = true; 
+                product.isHidden = true;
                 _dbContext.SaveChanges();
             }
             else
@@ -53,6 +56,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
         [HttpPost]
         public IActionResult EditProduct(string id, string name, decimal price, int count, int categoryId)
         {

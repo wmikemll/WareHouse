@@ -10,8 +10,38 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie(options =>
     {
         options.LoginPath = "/Home/Index";
-        options.AccessDeniedPath = "/Home/AccessDenied";
+        options.AccessDeniedPath = "/Home/Index";
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanViewShipments", policy =>
+        policy.RequireRole("Администратор", "Менеджер по закупкам", "Кладовщик", "Бухгалтер"));
+
+    options.AddPolicy("AdminOrProcurement", policy =>
+        policy.RequireRole("Администратор", "Менеджер по закупкам"));
+
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Администратор"));
+
+    options.AddPolicy("SalesManagerPolicy", policy =>
+        policy.RequireRole("Менеджер по продажам"));
+
+    options.AddPolicy("AdminSalesManager", policy =>
+        policy.RequireRole("Администратор", "Менеджер по продажам"));
+
+    options.AddPolicy("ProcurementManagerPolicy", policy =>
+        policy.RequireRole("Менеджер по закупкам"));
+
+    options.AddPolicy("WarehouseWorkerPolicy", policy =>
+        policy.RequireRole("Кладовщик"));
+
+    options.AddPolicy("AccountantPolicy", policy =>
+        policy.RequireRole("Бухгалтер"));
+
+    options.AddPolicy("FullAccess", policy =>
+        policy.RequireRole("Администратор", "Менеджер по продажам", "Менеджер по закупкам", "Кладовщик", "Бухгалтер"));
+});
 builder.Services.AddDbContext<NeondbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString(("Host=ep-mute-band-a8ch3ky8-pooler.eastus2.azure.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_SBV1YKWrxCf0"))));
 var app = builder.Build();

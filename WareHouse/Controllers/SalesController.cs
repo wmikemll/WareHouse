@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
+    [Authorize] // Требуется аутентификация для доступа к контроллеру
     public class SalesController : Controller
     {
-        private readonly NeondbContext _dbContext;
+        private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
         private readonly Random random;
 
         public SalesController(NeondbContext dbContext)
@@ -15,6 +18,8 @@ namespace WareHouse.Controllers
             _dbContext = dbContext;
             random = new Random();
         }
+
+        [Authorize(Policy = "FullAccess")]
         public async Task<IActionResult> Index()
         {
             var sales = await _dbContext.Sales
@@ -25,19 +30,16 @@ namespace WareHouse.Controllers
                 .Where(s => s.IsHidden == false)
                 .ToListAsync();
 
-            // Создаем словарь для хранения JSON-представлений SaleItems
             Dictionary<string, string> saleItemsJson = new Dictionary<string, string>();
 
             foreach (var sale in sales)
             {
-                // Сериализуем Saleitems в JSON
                 string json = JsonConvert.SerializeObject(sale.Saleitems, Formatting.None,
                         new JsonSerializerSettings()
                         {
                             ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                         });
 
-                // Сохраняем JSON в словаре
                 saleItemsJson[sale.Id] = json;
             }
 
@@ -51,7 +53,7 @@ namespace WareHouse.Controllers
             return View();
         }
 
-        // GET: Sales/Create
+        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
@@ -60,14 +62,13 @@ namespace WareHouse.Controllers
             return View();
         }
 
-        // POST: Sales/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
         public async Task<IActionResult> Create(string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
             {
-                // Создаем новую продажу
                 var sale = new Sale
                 {
                     Id = random.Next(100000, 999999).ToString(),
@@ -76,14 +77,12 @@ namespace WareHouse.Controllers
                     Userid = UserId
                 };
 
-                // Добавляем товары в продажу
                 foreach (var productId in ProductIds)
                 {
                     if (Quantities.ContainsKey(productId) && Quantities[productId] > 0)
                     {
                         int quantity = Quantities[productId];
 
-                        // Проверяем наличие товара на складе
                         var stockItem = await _dbContext.Products.FirstOrDefaultAsync(s => s.Id == productId);
                         if (stockItem == null || stockItem.Count < quantity)
                         {
@@ -94,14 +93,12 @@ namespace WareHouse.Controllers
                             return View();
                         }
 
-                        // Уменьшаем количество товара на складе
                         stockItem.Count -= quantity;
                         _dbContext.Update(stockItem);
 
-                        // Добавляем товар в продажу
                         sale.Saleitems.Add(new Saleitem
                         {
-                            Id = random.Next(100000,999999).ToString(),
+                            Id = random.Next(100000, 999999).ToString(),
                             Productid = productId,
                             Saleid = sale.Id,
                             Count = quantity
@@ -121,9 +118,9 @@ namespace WareHouse.Controllers
             return View();
         }
 
-        // POST: Sales/Cancel
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
         public async Task<IActionResult> Cancel(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -141,10 +138,8 @@ namespace WareHouse.Controllers
                 return NotFound();
             }
 
-            // Получаем ID статуса "Отменена"
             int canceledStatusId = 3;
 
-            // Возвращаем товары на склад
             foreach (var saleItem in sale.Saleitems)
             {
                 var stockItem = await _dbContext.Products.FirstOrDefaultAsync(s => s.Id == saleItem.Productid);
@@ -153,10 +148,8 @@ namespace WareHouse.Controllers
                     stockItem.Count += saleItem.Count;
                     _dbContext.Update(stockItem);
                 }
-                // Если товара нет на складе, это странная ситуация, но можно ее обработать
             }
 
-            // Изменяем статус продажи на "Отменена"
             sale.StatusId = canceledStatusId;
             _dbContext.Update(sale);
 
@@ -166,16 +159,15 @@ namespace WareHouse.Controllers
             }
             catch (Exception)
             {
-                // Обрабатываем ошибки при сохранении
                 return StatusCode(500, "Ошибка при отмене продажи.");
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: Sales/Hide
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminPolicy")]
         public async Task<IActionResult> Hide(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -197,17 +189,12 @@ namespace WareHouse.Controllers
             }
             catch (Exception)
             {
-                // Обрабатываем ошибки
                 return StatusCode(500, "Ошибка при изменении статуса продажи.");
             }
 
             return RedirectToAction(nameof(Index));
         }
-
-        private bool SaleExists(string id)
-        {
-            return _dbContext.Sales.Any(e => e.Id == id);
-        }
     }
+
 }
 

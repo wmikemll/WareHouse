@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
 using Newtonsoft.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace WareHouse.Controllers
 {
+    [Authorize]
     public class ShipmentsController : Controller
     {
         private readonly NeondbContext _DbContext;
@@ -17,10 +20,15 @@ namespace WareHouse.Controllers
         {
             _DbContext = dbContext;
             _random = new Random();
+
+
         }
 
+        [Authorize] // Доступ для просмотра: Admin, ProcurementManager, WarehouseWorker, Accountant
         public async Task<IActionResult> Index()
         {
+            var role = User.FindFirstValue(ClaimTypes.Role);
+
             // Загружаем поставки, статусы и пользователей (вместо ViewBags лучше использовать ViewModel)
             var shipments = await _DbContext.Shipments
                 .Include(s => s.Status) // Подгружаем статус
@@ -56,6 +64,8 @@ namespace WareHouse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Создание поставок: Admin, ProcurementManager
+
         public async Task<IActionResult> CreateShipment(string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
@@ -65,7 +75,7 @@ namespace WareHouse.Controllers
                     Id = _random.Next(10000,999999).ToString(),
                     Date = DateOnly.FromDateTime(DateTime.Now),
                     Statusid = 1,
-                    Userid = "668859"
+                    Userid = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
                 _DbContext.Shipments.Add(shipment);
                 _DbContext.SaveChanges();
@@ -101,6 +111,7 @@ namespace WareHouse.Controllers
         // POST: Shipments/EditShipment
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Редактирование поставок: Admin, ProcurementManager
         public async Task<IActionResult> EditShipment(string Id, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
@@ -174,7 +185,7 @@ namespace WareHouse.Controllers
             return View("Index"); // Возвращаемся на Index с заполненными данными
         }
 
-
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Отмена поставок: Admin, ProcurementManager
         public IActionResult CancelShipment(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -208,6 +219,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
         public IActionResult MarkAsArrived(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -237,6 +249,8 @@ namespace WareHouse.Controllers
 
             return RedirectToAction("Index");
         }
+
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
         public IActionResult DeleteShipment(string id)
         {
             if (id == null)
@@ -263,6 +277,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
         public async Task<IActionResult> ConfirmUnloading(string id)
         {
             if (string.IsNullOrEmpty(id))

@@ -23,6 +23,8 @@ namespace WareHouse.Controllers
         [AllowAnonymous]
         public IActionResult Index()
         {
+            var role = User.FindFirstValue(ClaimTypes.Role);
+
             // Check if the user is already authenticated
             if (User.Identity.IsAuthenticated)
             {
@@ -38,7 +40,8 @@ namespace WareHouse.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(string mail, string password)
         {
-            var account = _dbContext.Accounts.Include(a => a.User).FirstOrDefault(u => u.Mail.Trim() == mail && u.Password.Trim() == password);
+            var account = _dbContext.Accounts.Include(a => a.User).ThenInclude(u => u.Role).
+                 FirstOrDefault(u => u.Mail.Trim() == mail && u.Password.Trim() == password);
 
             if (account != null && account.User != null)
             {
@@ -47,7 +50,8 @@ namespace WareHouse.Controllers
             {
                 new Claim(ClaimTypes.Name, $"{account.User.Surname} {account.User.Name}"),
                 new Claim(ClaimTypes.Email, mail),
-                new Claim(ClaimTypes.NameIdentifier, account.Userid)
+                new Claim(ClaimTypes.Role, account.User.Role.Name),
+                new Claim(ClaimTypes.NameIdentifier, account.Userid),
             };
 
                 var claimsIdentity = new ClaimsIdentity(
