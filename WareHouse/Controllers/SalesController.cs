@@ -19,7 +19,6 @@ namespace WareHouse.Controllers
             random = new Random();
         }
 
-        [Authorize(Policy = "FullAccess")]
         public async Task<IActionResult> Index()
         {
             var sales = await _dbContext.Sales
@@ -53,7 +52,7 @@ namespace WareHouse.Controllers
             return View();
         }
 
-        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
+        [Authorize(Policy = "AdminSalesManager")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
@@ -64,7 +63,7 @@ namespace WareHouse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
+        [Authorize(Policy = "AdminSalesManager")]
         public async Task<IActionResult> Create(string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
@@ -120,7 +119,7 @@ namespace WareHouse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "AdminPolicy, SalesManagerPolicy")]
+        [Authorize(Policy = "AdminSalesManager")]
         public async Task<IActionResult> Cancel(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -167,7 +166,7 @@ namespace WareHouse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "AdminPolicy")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Hide(string id)
         {
             if (string.IsNullOrEmpty(id))

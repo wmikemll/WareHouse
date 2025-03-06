@@ -6,7 +6,7 @@ using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
-    [Authorize(Policy = "AdminPolicy")] // Доступ только для Admin
+    [Authorize(Policy = "AdminOnly")] // Доступ только для Admin
     public class EmployeesController : Controller
     {
         private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext

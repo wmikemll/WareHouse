@@ -64,7 +64,7 @@ namespace WareHouse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Создание поставок: Admin, ProcurementManager
+        [Authorize(Policy = "AdminOrProcurement")] // Создание поставок: Admin, ProcurementManager
 
         public async Task<IActionResult> CreateShipment(string[] ProductIds, Dictionary<string, int> Quantities)
         {
@@ -111,7 +111,7 @@ namespace WareHouse.Controllers
         // POST: Shipments/EditShipment
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Редактирование поставок: Admin, ProcurementManager
+        [Authorize(Policy = "AdminOrProcurement")] // Редактирование поставок: Admin, ProcurementManager
         public async Task<IActionResult> EditShipment(string Id, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
@@ -185,7 +185,7 @@ namespace WareHouse.Controllers
             return View("Index"); // Возвращаемся на Index с заполненными данными
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Отмена поставок: Admin, ProcurementManager
+        [Authorize(Policy = "AdminOrProcurement")] // Отмена поставок: Admin, ProcurementManager
         public IActionResult CancelShipment(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -219,7 +219,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
+        [Authorize(Policy = "AdminOrProcurementOrWareHouseWorker")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
         public IActionResult MarkAsArrived(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -250,7 +250,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
+        [Authorize(Policy = "AdminOnly")] 
         public IActionResult DeleteShipment(string id)
         {
             if (id == null)
@@ -277,7 +277,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, WarehouseWorkerPolicy")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
+        [Authorize(Policy = "AdminOrProcurementOrWareHouseWorker")] // Подтверждение разгрузки: Admin, ProcurementManager, WarehouseWorker
         public async Task<IActionResult> ConfirmUnloading(string id)
         {
             if (string.IsNullOrEmpty(id))

@@ -15,17 +15,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("CanViewShipments", policy =>
-        policy.RequireRole("Администратор", "Менеджер по закупкам", "Кладовщик", "Бухгалтер"));
-
     options.AddPolicy("AdminOrProcurement", policy =>
         policy.RequireRole("Администратор", "Менеджер по закупкам"));
+    options.AddPolicy("AdminOrProcurementOrWareHouseWorker", policy =>
+        policy.RequireRole("Администратор", "Менеджер по закупкам", "Кладовщик"));
 
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Администратор"));
-
-    options.AddPolicy("SalesManagerPolicy", policy =>
-        policy.RequireRole("Менеджер по продажам"));
 
     options.AddPolicy("AdminSalesManager", policy =>
         policy.RequireRole("Администратор", "Менеджер по продажам"));

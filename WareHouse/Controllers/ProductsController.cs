@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace WareHouse.Controllers
 {
-    [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy, SalesManagerPolicy, WarehouseWorkerPolicy, AccountantPolicy")] // Доступ для всех, кто может просматривать товары
+    [Authorize]
     public class ProductsController : Controller
     {
         private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
@@ -42,7 +42,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
+        [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
         public IActionResult DeleteProduct(string id)
         {
             var product = _dbContext.Products.FirstOrDefault(x => x.Id.Trim() == id.Trim());
@@ -56,7 +56,7 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
+        [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
         [HttpPost]
         public IActionResult EditProduct(string id, string name, decimal price, int count, int categoryId)
         {
