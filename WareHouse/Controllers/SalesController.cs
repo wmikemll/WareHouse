@@ -64,7 +64,7 @@ namespace WareHouse.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "AdminSalesManager")]
-        public async Task<IActionResult> Create(string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> Create(string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
             {
@@ -73,7 +73,7 @@ namespace WareHouse.Controllers
                     Id = random.Next(100000, 999999).ToString(),
                     Date = DateOnly.FromDateTime(DateTime.Now),
                     StatusId = 5,
-                    Userid = UserId
+                    Userid = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 foreach (var productId in ProductIds)

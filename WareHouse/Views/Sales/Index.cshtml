@@ -30,7 +30,7 @@
                     <tr>
                         <td>@sale.Id</td>
                         <td>@sale.Date.ToShortDateString()</td>
-                        <td>@sale.User.Name</td>
+                        <td>@sale.User.Surname @sale.User.Name</td>
                         <td>
                             @if (sale.Saleitems.Any())
                             {
@@ -82,15 +82,6 @@
                 </div>
                 <div class="modal-body">
                     <form method="post" asp-action="Create" asp-controller="Sales">
-                        <div class="form-group">
-                            <label for="UserId">Пользователь</label>
-                            <select class="form-control" id="UserId" name="UserId">
-                                @foreach (var user in ViewBag.Users)
-                                {
-                                    <option value="@user.Id">@user.Surname @user.Name</option>
-                                }
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label>Товары</label>
                             <table class="table table-bordered">

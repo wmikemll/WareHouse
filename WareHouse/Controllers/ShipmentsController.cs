@@ -112,7 +112,7 @@ namespace WareHouse.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "AdminOrProcurement")] // Редактирование поставок: Admin, ProcurementManager
-        public async Task<IActionResult> EditShipment(string Id, string UserId, string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> EditShipment(string Id, string[] ProductIds, Dictionary<string, int> Quantities)
         {
             if (ModelState.IsValid)
             {
@@ -127,7 +127,7 @@ namespace WareHouse.Controllers
                 }
 
                 // 2. Обновляем основные данные поставки
-                shipment.Userid = UserId;
+                shipment.Userid = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
                 // 3. Обновляем список товаров в поставке
 

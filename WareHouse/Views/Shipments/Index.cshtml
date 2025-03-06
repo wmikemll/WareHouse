@@ -180,16 +180,6 @@
                     <form method="post" asp-action="EditShipment" asp-controller="Shipments" id="editShipmentForm">
                         <input type="hidden" id="editShipmentId" name="Id" />
                         <div class="form-group">
-                            <label for="editShipmentUser">Пользователь</label>
-                            <select class="form-control" id="editShipmentUser" name="UserId">
-                                @foreach (var user in ViewBag.Users)
-                                {
-                                    <option value="@user.Id">@user.Surname @user.Name</option>  @* Отображаем полное имя пользователя *@
-                                }
-                            </select>
-                        </div>
-
-                        <div class="form-group">
                             <label>Товары:</label>
                             <table class="table table-bordered">
                                 <thead>
