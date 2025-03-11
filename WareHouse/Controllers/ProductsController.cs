@@ -21,8 +21,27 @@ namespace WareHouse.Controllers
         public IActionResult Index()
         {
             ViewBag.Categories = _dbContext.Categories.ToList();
-            ViewBag.Products = _dbContext.Products.Include(p => p.Category).Where(p => p.isHidden == false).ToList();
             return View();
+        }
+
+        public IActionResult DynamicSearch(string searchText, int? categoryId)
+        {
+            var products = _dbContext.Products
+                .Include(p => p.Category)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                products = products.Where(p => p.Name.ToLower().Contains(searchText.ToLower()));
+            }
+
+            if (categoryId.HasValue)
+            {
+                products = products.Where(p => p.Categoryid == categoryId);
+            }
+
+            var productList = products.ToList();
+            return PartialView("_ProductTablePartial", productList);
         }
 
         [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
