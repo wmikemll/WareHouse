@@ -42,7 +42,7 @@ namespace WareHouse.Controllers
                 saleItemsJson[sale.Id] = json;
             }
 
-
+            ViewBag.Categories = await _dbContext.Categories.ToListAsync();
             ViewBag.Sales = sales;
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
             ViewBag.Users = await _dbContext.Users.ToListAsync();
@@ -115,6 +115,24 @@ namespace WareHouse.Controllers
             ViewBag.Users = await _dbContext.Users.ToListAsync();
             ViewBag.Products = await _dbContext.Products.ToListAsync();
             return View();
+        }
+
+        public async Task<IActionResult> FilterProducts(int? categoryId, string searchQuery)
+        {
+            var productsQuery = _dbContext.Products.AsQueryable();
+
+            if (categoryId.HasValue)
+            {
+                productsQuery = productsQuery.Where(p => p.Categoryid == categoryId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                productsQuery = productsQuery.Where(p => p.Name.Contains(searchQuery));
+            }
+
+            var products = await productsQuery.ToListAsync();
+            return PartialView("_ProductListPartial", products);
         }
 
         [HttpPost]

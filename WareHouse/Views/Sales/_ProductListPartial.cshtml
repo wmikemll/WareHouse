@@ -1,0 +1,23 @@
+﻿@model IEnumerable<Product>
+
+@foreach (Product product in Model)
+{
+    <tr>
+        <td>
+            @product.Name
+            <input type="hidden" name="ProductIds" value="@product.Id" />
+        </td>
+        @if (product.Count > 0)
+        {
+            <td>
+                <input type="number" class="form-control" name="Quantities[@product.Id]" value="0" min="0" max="@product.Count">
+            </td>
+        }
+        else
+        {
+            <td>
+                <p>Товар закончился</p>
+            </td>
+        }
+    </tr>
+}

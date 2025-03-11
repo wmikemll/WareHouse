@@ -81,10 +81,24 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="post" asp-action="Create" asp-controller="Sales">
+                    <div class="form-group">
+                        <label for="categoryFilter">Категория</label>
+                        <select id="categoryFilter" class="form-control">
+                            <option value="">Все категории</option>
+                            @foreach (var category in ViewBag.Categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="searchQuery">Поиск товара</label>
+                        <input type="text" id="searchQuery" class="form-control" placeholder="Введите название товара">
+                    </div>
+                    <form method="post" asp-action="Create" asp-controller="Sales" id="salesForm">
                         <div class="form-group">
                             <label>Товары</label>
-                            <table class="table table-bordered">
+                            <table class="table table-bordered" id="productsTable">
                                 <thead>
                                     <tr>
                                         <th>Товар</th>
@@ -92,27 +106,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (Product product in ViewBag.Products)
-                                    {
-                                        <tr>
-                                            <td>
-                                                @product.Name
-                                                <input type="hidden" name="ProductIds" value="@product.Id" />
-                                            </td>
-                                            @if (product.Count > 0) 
-                                            {
-                                                <td>
-                                                    <input type="number" class="form-control" name="Quantities[@product.Id]" value="0" min="0" max="@product.Count">
-                                                </td>
-                                            }
-                                            else
-                                            {
-                                            <td>
-                                                <p>Товар закончился</p>
-                                            </td>
-                                            } 
-                                        </tr>
-                                    }
+                                    <!-- Товары будут подгружаться сюда динамически -->
                                 </tbody>
                             </table>
                         </div>
@@ -123,3 +117,33 @@
         </div>
     </div>
 </section>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            function loadProducts(categoryId = '', searchQuery = '') {
+                $.ajax({
+                    url: '@Url.Action("FilterProducts", "Sales")',
+                    type: 'GET',
+                    data: {
+                        categoryId: categoryId,
+                        searchQuery: searchQuery
+                    },
+                    success: function(response) {
+                        $('#productsTable tbody').html(response);
+                    }
+                });
+            }
+
+            $('#categoryFilter').change(function() {
+                loadProducts($(this).val(), $('#searchQuery').val());
+            });
+
+            $('#searchQuery').on('input', function() {
+                loadProducts($('#categoryFilter').val(), $(this).val());
+            });
+
+            // Initial load
+            loadProducts();
+        });
+    </script>
+}
