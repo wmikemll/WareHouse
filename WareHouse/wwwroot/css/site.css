@@ -34,3 +34,7 @@ body {
     font-size: 0.8em;
     margin-top: 0.25rem;
 }
+
+.low-stock {
+    background-color: #fff3cd; /* Желтый цвет для предупреждения */
+}

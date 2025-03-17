@@ -1,0 +1,46 @@
+﻿@using System.Security.Claims
+@model IEnumerable<Sale>  // Замените YourNamespace на пространство имен ваших моделей
+@{
+    var isSaleManagerOrAdmin = User.HasClaim(ClaimTypes.Role, "Администратор") == true || User.HasClaim(ClaimTypes.Role, "Менеджер по продажам") == true;
+}
+@foreach (Sale sale in Model)
+{
+    <tr>
+        <td>@sale.Id</td>
+        <td>@sale.Date.ToShortDateString()</td>
+        <td>@sale.User.Surname @sale.User.Name</td>
+        <td>
+            @if (sale.Saleitems.Any())
+            {
+                <ul class="list-unstyled">
+                    @foreach (Saleitem item in sale.Saleitems)
+                    {
+                        <li>@item.Product.Name - @item.Count шт.</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Нет товаров</p>
+            }
+        </td>
+        @if (isSaleManagerOrAdmin)
+        {
+            <td>
+                @if (sale.StatusId != 3 && sale.IsHidden == false) // Не отменена и не скрыта
+                {
+                    <form method="post" asp-action="Cancel" asp-controller="Sales" asp-route-id="@sale.Id" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-ban"></i> Отменить</button>
+                    </form>
+                }
+
+                @if (sale.IsHidden == false) // Не скрыта
+                {
+                    <form method="post" asp-action="Hide" asp-controller="Sales" asp-route-id="@sale.Id" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-eye-slash"></i> Скрыть</button>
+                    </form>
+                }
+            </td>
+        }
+    </tr>
+}

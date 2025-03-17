@@ -5,6 +5,41 @@
 <section id="sales">
     <h2>Продажи</h2>
     <p>Список продаж.</p>
+    <div class="dropdown mb-3">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="filterDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Фильтры
+        </button>
+        <div class="dropdown-menu p-3" aria-labelledby="filterDropdown">
+            <form class="px-4 py-3">
+
+                <div class="mb-3">
+                    <label for="userFilter">Фильтр по пользователю:</label>
+                    <select id="userFilter" class="form-select" onchange="filterSales()">
+                        <option value="">Все пользователи</option>
+                        @foreach (User user in ViewBag.Users)
+                        {
+                            <option value="@user.Id">@user.Name @user.Surname</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="dateFilter">Фильтр по дате:</label>
+                    <input type="date" id="dateFilter" class="form-control" onchange="filterSales()">
+                </div>
+
+                <div class="mb-3">
+                    <label for="saleIdSearch">Поиск по ID продажи:</label>
+                    <div class="input-group">
+                        <input type="number" id="saleIdSearch" class="form-control" placeholder="Введите ID продажи" oninput="filterSales()">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Очистить фильтры
+                </button>
+            </form>
+        </div>
+    </div>
     @if (isSaleManagerOrAdmin) 
     {
         <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addSaleModal">Добавить продажу</button>
@@ -18,54 +53,15 @@
                     <th>Дата</th>
                     <th>Пользователь</th>
                     <th>Товары</th>
-                    @if (isSaleManagerOrAdmin) 
+                    @if (isSaleManagerOrAdmin)
                     {
                         <th>Действия</th>
                     }
                 </tr>
             </thead>
-            <tbody>
-                @foreach (Sale sale in ViewBag.Sales)
-                {
-                    <tr>
-                        <td>@sale.Id</td>
-                        <td>@sale.Date.ToShortDateString()</td>
-                        <td>@sale.User.Surname @sale.User.Name</td>
-                        <td>
-                            @if (sale.Saleitems.Any())
-                            {
-                                <ul class="list-unstyled">
-                                    @foreach (var item in sale.Saleitems)
-                                    {
-                                        <li>@item.Product.Name - @item.Count шт.</li>
-                                    }
-                                </ul>
-                            }
-                            else
-                            {
-                                <p>Нет товаров</p>
-                            }
-                        </td>
-                        @if (isSaleManagerOrAdmin) 
-                        {
-                            <td>
-                                @if (sale.StatusId != 3 && sale.IsHidden == false) // Не отменена и не скрыта
-                                {
-                                    <form method="post" asp-action="Cancel" asp-controller="Sales" asp-route-id="@sale.Id" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-ban"></i> Отменить</button>
-                                    </form>
-                                }
-
-                                @if (sale.IsHidden == false) // Не скрыта
-                                {
-                                    <form method="post" asp-action="Hide" asp-controller="Sales" asp-route-id="@sale.Id" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-eye-slash"></i> Скрыть</button>
-                                    </form>
-                                }
-                            </td>
-                        }
-                    </tr>
-                }
+            <tbody id="salesTableBody">
+                @* Отображаем начальные данные из ViewBag.Sales *@
+                @Html.Partial("_SalesTablePartial", (IEnumerable<Sale>)ViewBag.Sales)
             </tbody>
         </table>
     </div>
@@ -118,7 +114,10 @@
     </div>
 </section>
 @section Scripts {
+    <script src="~/js/sale.js"></script>
+
     <script>
+
         $(document).ready(function() {
             function loadProducts(categoryId = '', searchQuery = '') {
                 $.ajax({

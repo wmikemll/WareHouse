@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WareHouse.Models;
 
 namespace WareHouse.Controllers
 {
@@ -24,27 +25,44 @@ namespace WareHouse.Controllers
             return View();
         }
 
-        public IActionResult DynamicSearch(string searchText, int? categoryId)
-        {
-            var products = _dbContext.Products
-                .Include(p => p.Category)
-                .AsQueryable();
+		public async Task<IActionResult> DynamicSearch(string searchText, int? categoryId, decimal? minPrice, decimal? maxPrice, bool showLowStock)
+		{
+			IQueryable<Product> products = _dbContext.Products
+				.Include(p => p.Category)
+				.AsQueryable();
 
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                products = products.Where(p => p.Name.ToLower().Contains(searchText.ToLower()));
-            }
+			if (!string.IsNullOrEmpty(searchText))
+			{
+				products = products.Where(p => p.Name.Contains(searchText));
+			}
 
-            if (categoryId.HasValue)
-            {
-                products = products.Where(p => p.Categoryid == categoryId);
-            }
+			if (categoryId.HasValue)
+			{
+				products = products.Where(p => p.Categoryid == categoryId.Value);
+			}
 
-            var productList = products.ToList();
-            return PartialView("_ProductTablePartial", productList);
-        }
+			if (minPrice.HasValue)
+			{
+				products = products.Where(p => p.Price >= minPrice.Value);
+			}
 
-        [Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
+			if (maxPrice.HasValue)
+			{
+				products = products.Where(p => p.Price <= maxPrice.Value);
+			}
+
+			if (showLowStock)
+			{
+				products = products.Where(p => p.Count <= 10); // Порог низкого остатка
+			}
+
+
+			var filteredProducts = await products.ToListAsync();
+
+			return PartialView("_ProductTablePartial", filteredProducts); // Return the Partial View
+		}
+
+		[Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
         [HttpPost]
         public IActionResult AddProduct(string Name, decimal Price, int Count, int Category)
         {

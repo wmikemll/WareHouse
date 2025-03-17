@@ -1,25 +1,61 @@
 ﻿@using System.Security.Claims
-<div class="mb-3">
-	<label for="searchInput">Поиск товара:</label>
-	<div class="input-group">
-		<input type="text" id="searchInput" class="form-control" placeholder="Введите название товара" oninput="dynamicSearch()">
-		<button class="btn btn-outline-secondary" type="button" onclick="dynamicSearch()">
-			<i class="fas fa-search"></i>
-		</button>
+<div class="dropdown mb-3">
+	<button class="btn btn-secondary dropdown-toggle" type="button" id="filterDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+		Фильтры
+	</button>
+	<div class="dropdown-menu p-3" aria-labelledby="filterDropdown">
+		<form class="px-4 py-3">
+			<h6 class="dropdown-header">Поиск</h6>
+			<div class="mb-3">
+				<label for="searchInput">Поиск товара:</label>
+				<div class="input-group">
+					<input type="text" id="searchInput" class="form-control" placeholder="Введите название товара" oninput="dynamicSearch()">
+					<button class="btn btn-outline-secondary" type="button" onclick="dynamicSearch()">
+						<i class="fas fa-search"></i>
+					</button>
+				</div>
+			</div>
+			<div class="dropdown-divider"></div>
+			<h6 class="dropdown-header">Категории</h6>
+			<div class="mb-3">
+				<label for="categoryFilter">Сортировать по категории:</label>
+				<select id="categoryFilter" class="form-select" onchange="dynamicSearch()">
+					<option value="">Все категории</option>
+					@foreach (var category in ViewBag.Categories)
+					{
+						<option value="@category.Id">@category.Name</option>
+					}
+				</select>
+			</div>
+			<div class="dropdown-divider"></div>
+			<h6 class="dropdown-header">Цена</h6>
+			<div class="mb-3">
+				<label for="minPrice">Минимальная цена:</label>
+				<input type="number" id="minPrice" class="form-control" placeholder="Минимум" oninput="dynamicSearch()">
+			</div>
+			<div class="mb-3">
+				<label for="maxPrice">Максимальная цена:</label>
+				<input type="number" id="maxPrice" class="form-control" placeholder="Максимум" oninput="dynamicSearch()">
+			</div>
+
+			@if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор"))
+			{
+				<div class="mb-3 form-check">
+					<input type="checkbox" class="form-check-input" id="showLowStockProducts" onchange="dynamicSearch()">
+					<label class="form-check-label" for="showLowStockProducts">Товары с низким остатком</label>
+				</div>
+				<div class="mb-3">
+
+					<button class="btn btn-secondary" onclick="resetProductFilter()">
+						<i class="fas fa-times"></i> Сбросить
+					</button>
+				</div>
+			}
+
+		</form>
 	</div>
 </div>
 
-@* Сортировка по категориям *@
-<div class="mb-3">
-	<label for="categoryFilter">Сортировать по категории:</label>
-	<select id="categoryFilter" class="form-select" onchange="dynamicSearch()">
-		<option value="">Все категории</option>
-		@foreach (var category in ViewBag.Categories)
-		{
-			<option value="@category.Id">@category.Name</option>
-		}
-	</select>
-</div>
 
 <section id="products">
 	<h2>Товары</h2>
@@ -42,6 +78,7 @@
 					}
 				</tr>
 			</thead>
+			<!-- Динамическое содержимое будет загружено сюда -->
 			<tbody id="productTableBody">
 				@* Table content will be dynamically loaded here *@
 			</tbody>

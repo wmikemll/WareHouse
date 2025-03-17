@@ -45,7 +45,7 @@ namespace WareHouse.Controllers
             ViewBag.Categories = await _dbContext.Categories.ToListAsync();
             ViewBag.Sales = sales;
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
-            ViewBag.Users = await _dbContext.Users.ToListAsync();
+            ViewBag.Users = await _dbContext.Users.Where(u => u.Roleid == 2 || u.Roleid == 3).ToListAsync();
             ViewBag.Products = await _dbContext.Products.ToListAsync();
             ViewBag.SaleItemsJson = saleItemsJson;
 
@@ -133,6 +133,30 @@ namespace WareHouse.Controllers
 
             var products = await productsQuery.ToListAsync();
             return PartialView("_ProductListPartial", products);
+        }
+
+        public IActionResult FilterSales(string userId, DateTime? date, int? saleId)
+        {
+            IQueryable<Sale> sales = _dbContext.Sales.Include(s => s.User).Include(s => s.Saleitems).ThenInclude(si => si.Product); // Include User
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                sales = sales.Where(s => s.Userid == userId);
+            }
+
+            if (date.HasValue)
+            {
+                sales = sales.Where(s => s.Date == DateOnly.FromDateTime(date.Value.Date));
+            }
+
+            if (saleId.HasValue)
+            {
+                sales = sales.Where(s => s.Id.Contains(saleId.Value.ToString()));
+            }
+
+            var filteredSales = sales.ToList();
+
+            return PartialView("_SalesTablePartial", filteredSales);
         }
 
         [HttpPost]
