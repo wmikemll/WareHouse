@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
@@ -42,7 +45,7 @@ namespace WareHouse.Controllers
             {
                 Id = _random.Next(100000, 999999).ToString(),
                 Mail = Email,
-                Password = Password,
+                Password = Encrypt(Password),
                 CreatedDate = DateOnly.FromDateTime(DateTime.Now),
                 Isactive = true,
                 Phone = Phone,
@@ -85,5 +88,15 @@ namespace WareHouse.Controllers
 
             return RedirectToAction("Index");
         }
+
+
+
+        public static string Encrypt(string plainText)
+        {
+            var plainBytes = Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainBytes);
+        }
+
+
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WareHouse.Models;
+using System.Text;
 
 namespace WareHouse.Controllers
 {
@@ -40,49 +41,69 @@ namespace WareHouse.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(string mail, string password)
         {
-            var account = _dbContext.Accounts.Include(a => a.User).ThenInclude(u => u.Role).
-                 FirstOrDefault(u => u.Mail.Trim() == mail && u.Password.Trim() == password);
+            // 1. Находим пользователя только по email (без проверки пароля)
+            var account = _dbContext.Accounts
+                .Include(a => a.User)
+                .ThenInclude(u => u.Role)
+                .FirstOrDefault(u => u.Mail.Trim() == mail.Trim());
 
-            if (account != null && account.User != null)
+            if (account == null || account.User == null)
             {
-                // 2. Authentication (Create Claims & SignIn)
-                var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, $"{account.User.Surname} {account.User.Name}"),
-                new Claim(ClaimTypes.Email, mail),
-                new Claim(ClaimTypes.Role, account.User.Role.Name),
-                new Claim(ClaimTypes.NameIdentifier, account.Userid),
-            };
-
-                var claimsIdentity = new ClaimsIdentity(
-                    claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = true // "Remember Me" functionality
-                };
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authProperties);
-
-                // 3. Success - Redirect
-                return RedirectToAction("Index", "Home"); // Redirect to the same page (or another secure page)
-            }
-            else
-            {
-                //Authentication failed
                 ViewBag.ErrorMessage = "Неверная почта или пароль";
                 ViewBag.ShowModal = true;
                 return View();
             }
+
+            // 2. Проверяем пароль с хешем из БД
+            bool isPasswordValid = VerifyPassword(password, account.Password);
+
+            if (!isPasswordValid)
+            {
+                ViewBag.ErrorMessage = "Неверная почта или пароль";
+                ViewBag.ShowModal = true;
+                return View();
+            }
+
+            // 3. Authentication (Create Claims & SignIn)
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, $"{account.User.Surname} {account.User.Name}"),
+                new Claim(ClaimTypes.Email, mail),
+                new Claim(ClaimTypes.Role, account.User.Role.Name),
+                new Claim(ClaimTypes.NameIdentifier, account.Userid.ToString()),
+            };
+
+            var claimsIdentity = new ClaimsIdentity(
+                claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true // "Remember Me" functionality
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        private bool VerifyPassword(string password, string passwordHash)
+        {
+            return password ==  Decrypt(passwordHash);
         }
 
         public IActionResult Logout()
         {
             HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
+        }
+
+        public static string Decrypt(string cipherText)
+        {
+            var cipherBytes = Convert.FromBase64String(cipherText);
+            return Encoding.UTF8.GetString(cipherBytes);
         }
 
 
