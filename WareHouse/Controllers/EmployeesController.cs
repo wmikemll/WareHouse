@@ -12,7 +12,7 @@ namespace WareHouse.Controllers
     [Authorize(Policy = "AdminOnly")] // Доступ только для Admin
     public class EmployeesController : Controller
     {
-        private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
+        private readonly NeondbContext _dbContext; 
         private readonly Random _random;
 
         public EmployeesController(NeondbContext dbContext)
@@ -31,6 +31,7 @@ namespace WareHouse.Controllers
         [HttpPost]
         public IActionResult AddEmployee(string Name, string Surname, string Patronomic, string Email, string Password, string Phone, int RoleId)
         {
+
             var employee = new User()
             {
                 Id = _random.Next(100000, 999999).ToString(),
@@ -91,7 +92,7 @@ namespace WareHouse.Controllers
 
 
 
-        public static string Encrypt(string plainText)
+        public static string Encrypt(string plainText) //Шифрование пароля
         {
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainBytes);

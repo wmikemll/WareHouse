@@ -1,61 +1,28 @@
 ﻿@using System.Security.Claims
-<div class="dropdown mb-3">
-	<button class="btn btn-secondary dropdown-toggle" type="button" id="filterDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-		Фильтры
-	</button>
-	<div class="dropdown-menu p-3" aria-labelledby="filterDropdown">
-		<form class="px-4 py-3">
-			<h6 class="dropdown-header">Поиск</h6>
-			<div class="mb-3">
-				<label for="searchInput">Поиск товара:</label>
-				<div class="input-group">
-					<input type="text" id="searchInput" class="form-control" placeholder="Введите название товара" oninput="dynamicSearch()">
-					<button class="btn btn-outline-secondary" type="button" onclick="dynamicSearch()">
-						<i class="fas fa-search"></i>
-					</button>
-				</div>
-			</div>
-			<div class="dropdown-divider"></div>
-			<h6 class="dropdown-header">Категории</h6>
-			<div class="mb-3">
-				<label for="categoryFilter">Сортировать по категории:</label>
-				<select id="categoryFilter" class="form-select" onchange="dynamicSearch()">
-					<option value="">Все категории</option>
-					@foreach (var category in ViewBag.Categories)
-					{
-						<option value="@category.Id">@category.Name</option>
-					}
-				</select>
-			</div>
-			<div class="dropdown-divider"></div>
-			<h6 class="dropdown-header">Цена</h6>
-			<div class="mb-3">
-				<label for="minPrice">Минимальная цена:</label>
-				<input type="number" id="minPrice" class="form-control" placeholder="Минимум" oninput="dynamicSearch()">
-			</div>
-			<div class="mb-3">
-				<label for="maxPrice">Максимальная цена:</label>
-				<input type="number" id="maxPrice" class="form-control" placeholder="Максимум" oninput="dynamicSearch()">
-			</div>
-
-			@if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор"))
-			{
-				<div class="mb-3 form-check">
-					<input type="checkbox" class="form-check-input" id="showLowStockProducts" onchange="dynamicSearch()">
-					<label class="form-check-label" for="showLowStockProducts">Товары с низким остатком</label>
-				</div>
-				<div class="mb-3">
-
-					<button class="btn btn-secondary" onclick="resetProductFilter()">
-						<i class="fas fa-times"></i> Сбросить
-					</button>
-				</div>
-			}
-
-		</form>
+@{
+	bool showHidden = ViewBag.ShowHidden;
+}
+<div class="mb-3">
+	<label for="searchInput">Поиск товара:</label>
+	<div class="input-group">
+		<input type="text" id="searchInput" class="form-control" placeholder="Введите название товара" oninput="dynamicSearch()">
+		<button class="btn btn-outline-secondary" type="button" onclick="dynamicSearch()">
+			<i class="fas fa-search"></i>
+		</button>
 	</div>
 </div>
 
+@* Сортировка по категориям *@
+<div class="mb-3">
+	<label for="categoryFilter">Сортировать по материалу:</label>
+	<select id="categoryFilter" class="form-select" onchange="dynamicSearch()">
+		<option value="">Все материалы</option>
+		@foreach (var materialType in ViewBag.Categories)
+		{
+			<option value="@materialType.Id">@materialType.Name</option>
+		}
+	</select>
+</div>
 
 <section id="products">
 	<h2>Товары</h2>
@@ -63,6 +30,10 @@
 	@if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор"))
 	{
 		<button class="btn btn-success mb-3" data-toggle="modal" data-target="#addProductModal">Добавить товар</button>
+		<a href="/Products/Index?isHidden=@(!showHidden)" class="btn @(ViewBag.ShowHidden ? "btn-info" : "btn-secondary") mb-3">
+			<i class="fas @(ViewBag.ShowHidden ? "fa-eye-slash" : "fa-eye")"></i>
+			@(ViewBag.ShowHidden ? "Показать активные" : "Показать скрытые")
+		</a>
 	}
 	<div class="table-responsive">
 		<table class="table table-striped table-bordered">
@@ -70,17 +41,17 @@
 				<tr>
 					<th>Название</th>
 					<th>Цена</th>
-					<th>Количество</th>
-					<th>Категория</th>
+					<th>Вес</th>
+					<th>Тип материала</th>
+					<th>Бренд материала</th>
+					<th>Удельный вес</th>
 					@if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор"))
 					{
 						<th>Действия</th>
 					}
 				</tr>
 			</thead>
-			<!-- Динамическое содержимое будет загружено сюда -->
 			<tbody id="productTableBody">
-				@* Table content will be dynamically loaded here *@
 			</tbody>
 		</table>
 	</div>
@@ -105,13 +76,21 @@
 							<input type="number" class="form-control" id="editProductPrice" name="Price" placeholder="Введите цену">
 						</div>
 						<div class="form-group">
-							<label for="editProductCount">Количество</label>
-							<input type="number" class="form-control" id="editProductCount" name="Count" placeholder="Введите количество">
+							<label for="editProductWeight">Вес</label>
+							<input type="number" class="form-control" step="0.01" min="0.1" id="editProductWeight" oninput="this.value = this.value.replace(/,/g, '.')" name="Weight" placeholder="Введите вес">
 						</div>
 						<div class="form-group">
-							<label for="editProductCategory">Категория</label>
-							<select class="form-control" id="editProductCategory" name="CategoryId">
-								@foreach (Category category in ViewBag.Categories)
+							<label for="editProductSpecificGravity">Удельный вес</label>
+							<input type="number" class="form-control" step="0.01" min="0.1" id="editProductSpecificGravity" oninput="this.value = this.value.replace(/,/g, '.')" name="SpecificGravity" placeholder="Введите удельный вес">
+						</div>
+						<div class="form-group">
+							<label for="editProductMaterialBrand">Марка материала</label>
+							<input type="text" class="form-control" id="editProductMaterialBrand" name="MaterialBrand" placeholder="Введите марку материала">
+						</div>
+						<div class="form-group">
+							<label for="editProductMaterialType">Тип материала</label>
+							<select class="form-control" id="editProductMaterialType" name="MaterialType">
+								@foreach (Materialtype category in ViewBag.Categories)
 								{
 									<option value="@category.Id">@category.Name</option>
 								}
@@ -130,7 +109,7 @@
 
 
 <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel"
-	 aria-hidden="true">
+aria-hidden="true">
 	<div class="modal-dialog" role="document">
 		<div class="modal-content">
 			<div class="modal-header">
@@ -143,20 +122,28 @@
 				<form asp-action="AddProduct" asp-controller="Products" method="post">
 					<div class="form-group">
 						<label for="productName">Название товара</label>
-						<input type="text" name="Name" class="form-control" id="productName" placeholder="Введите название товара">
+						<input type="text" name="Name" class="form-control" id="productName" placeholder="Введите название товара" required>
 					</div>
 					<div class="form-group">
 						<label for="productPrice">Цена</label>
-						<input type="number" name="Price" class="form-control" id="productPrice" placeholder="Введите цену">
+						<input type="number" name="Price" class="form-control" id="productPrice" placeholder="Введите цену" required>
 					</div>
 					<div class="form-group">
-						<label for="productCount">Количество</label>
-						<input type="number" name="Count" class="form-control" id="productCount" placeholder="Введите количество">
+						<label for="productWeight">Вес</label>
+						<input type="number" class="form-control" step="0.01" min="0.1" id="productWeight" name="Weight" placeholder="Введите вес">
 					</div>
 					<div class="form-group">
-						<label for="productCategory">Категория</label>
-						<select class="form-control" id="productCategory" name="Category">
-							@foreach (Category category in ViewBag.Categories) 
+						<label for="productSpecificGravity">Удельный вес</label>
+						<input type="number" class="form-control" step="0.01" min="0.1" id="productSpecificGravity" name="SpecificGravity" oninput="this.value = this.value.replace(/,/g, '.')" placeholder="Введите удельный вес">
+					</div>
+					<div class="form-group">
+						<label for="productMaterialBrand">Марка материала</label>
+						<input type="text" class="form-control" id="productMaterialBrand" name="MaterialBrand" placeholder="Введите марку материала">
+					</div>
+					<div class="form-group">
+						<label for="productMaterialType">Тип материала</label>
+						<select class="form-control" id="productMaterialType" name="MaterialType">
+							@foreach (Materialtype category in ViewBag.Categories) 
 							{
 								<option value="@category.Id">@category.Name</option>
 							}
@@ -168,17 +155,77 @@
 					</div>
 				</form>
 			</div>
-
 		</div>
 	</div>
 </div>
 
+@if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор")) 
+{
+	<!-- Модальное окно для добавления/редактирования категории -->
+	<div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog" aria-labelledby="addCategoryModalLabel"
+		 aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="addCategoryModalLabel">Добавить/Изменить категорию</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<form id="categoryForm" asp-action="SaveCategory" asp-controller="Products" method="post">
+						<input type="hidden" id="categoryId" name="Id" value="0" /> <!-- Скрытое поле для Id категории -->
+						<div class="form-group">
+							<label for="categoryName">Название материала</label>
+							<input type="text" class="form-control" id="categoryName" name="Name" required />
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+							<button type="submit" class="btn btn-primary">Сохранить</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Кнопка для открытия модального окна -->
+	<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCategoryModal" onclick="clearForm()">
+		Добавить тип материала
+	</button>
+
+	<!-- Таблица для отображения категорий -->
+	<table class="table">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Название</th>
+				<th>Действия</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var category in ViewBag.Categories)
+			{
+				<tr>
+					<td>@category.Id</td>
+					<td>@category.Name</td>
+					<td>
+						<button type="button" class="btn btn-warning btn-sm" onclick="editCategory(@category.Id, '@category.Name')">
+							Изменить
+						</button>
+						<button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory(@category.Id)">
+							Удалить
+						</button>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+
+
+
 @section Scripts {
 	<script src="~/js/products.js"></script>
-	<script>
-		$(document).ready(function () {
-			// Этот код выполняется после загрузки DOM
-			console.log("document ready"); // Проверка
-		});
-	</script>
 }

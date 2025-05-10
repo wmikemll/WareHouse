@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Globalization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,15 +20,16 @@ namespace WareHouse.Controllers
             random = new Random();
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(bool isHidden = false)
         {
             var sales = await _dbContext.Sales
                 .Include(s => s.Status)
                 .Include(s => s.User)
                 .Include(s => s.Saleitems)
                     .ThenInclude(si => si.Product)
-                .Where(s => s.IsHidden == false)
+                .Where(s => s.IsHidden == isHidden)
                 .ToListAsync();
+            ViewBag.IsHidden = isHidden;
 
             Dictionary<string, string> saleItemsJson = new Dictionary<string, string>();
 
@@ -42,10 +44,10 @@ namespace WareHouse.Controllers
                 saleItemsJson[sale.Id] = json;
             }
 
-            ViewBag.Categories = await _dbContext.Categories.ToListAsync();
+            ViewBag.Categories = await _dbContext.MaterialTypes.Where(c => !c.IsDeleted).ToListAsync();
             ViewBag.Sales = sales;
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
-            ViewBag.Users = await _dbContext.Users.Where(u => u.Roleid == 2 || u.Roleid == 3).ToListAsync();
+            ViewBag.Users = await _dbContext.Users.ToListAsync();
             ViewBag.Products = await _dbContext.Products.ToListAsync();
             ViewBag.SaleItemsJson = saleItemsJson;
 
@@ -64,8 +66,13 @@ namespace WareHouse.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "AdminSalesManager")]
-        public async Task<IActionResult> Create(string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> Create(string[] ProductIds, Dictionary<string, string> Quantities)
         {
+            if (Quantities == null || !Quantities.Any(q => double.Parse(q.Value, CultureInfo.InvariantCulture) > 0))
+            {
+                ModelState.AddModelError("", "Должен быть выбран хотя бы один товар");
+                return BadRequest(ModelState);
+            }
             if (ModelState.IsValid)
             {
                 var sale = new Sale
@@ -78,12 +85,12 @@ namespace WareHouse.Controllers
 
                 foreach (var productId in ProductIds)
                 {
-                    if (Quantities.ContainsKey(productId) && Quantities[productId] > 0)
+                    if (Quantities.ContainsKey(productId) && double.Parse(Quantities[productId], CultureInfo.InvariantCulture) > 0)
                     {
-                        int quantity = Quantities[productId];
+                        double quantity = double.Parse(Quantities[productId], CultureInfo.InvariantCulture);
 
                         var stockItem = await _dbContext.Products.FirstOrDefaultAsync(s => s.Id == productId);
-                        if (stockItem == null || stockItem.Count < quantity)
+                        if (stockItem == null || stockItem.Weight < quantity)
                         {
                             ModelState.AddModelError("", $"Недостаточно товара '{_dbContext.Products.Find(productId).Name}' на складе.");
                             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
@@ -92,7 +99,7 @@ namespace WareHouse.Controllers
                             return View();
                         }
 
-                        stockItem.Count -= quantity;
+                        stockItem.Weight -= quantity;
                         _dbContext.Update(stockItem);
 
                         sale.Saleitems.Add(new Saleitem
@@ -100,7 +107,7 @@ namespace WareHouse.Controllers
                             Id = random.Next(100000, 999999).ToString(),
                             Productid = productId,
                             Saleid = sale.Id,
-                            Count = quantity
+                            Weight = quantity,
                         });
                     }
                 }
@@ -123,7 +130,7 @@ namespace WareHouse.Controllers
 
             if (categoryId.HasValue)
             {
-                productsQuery = productsQuery.Where(p => p.Categoryid == categoryId.Value);
+                productsQuery = productsQuery.Where(p => p.MaterialTypeId == categoryId.Value);
             }
 
             if (!string.IsNullOrEmpty(searchQuery))
@@ -133,30 +140,6 @@ namespace WareHouse.Controllers
 
             var products = await productsQuery.ToListAsync();
             return PartialView("_ProductListPartial", products);
-        }
-
-        public IActionResult FilterSales(string userId, DateTime? date, int? saleId)
-        {
-            IQueryable<Sale> sales = _dbContext.Sales.Include(s => s.User).Include(s => s.Saleitems).ThenInclude(si => si.Product); // Include User
-
-            if (!string.IsNullOrEmpty(userId))
-            {
-                sales = sales.Where(s => s.Userid == userId);
-            }
-
-            if (date.HasValue)
-            {
-                sales = sales.Where(s => s.Date == DateOnly.FromDateTime(date.Value.Date));
-            }
-
-            if (saleId.HasValue)
-            {
-                sales = sales.Where(s => s.Id.Contains(saleId.Value.ToString()));
-            }
-
-            var filteredSales = sales.ToList();
-
-            return PartialView("_SalesTablePartial", filteredSales);
         }
 
         [HttpPost]
@@ -186,7 +169,7 @@ namespace WareHouse.Controllers
                 var stockItem = await _dbContext.Products.FirstOrDefaultAsync(s => s.Id == saleItem.Productid);
                 if (stockItem != null)
                 {
-                    stockItem.Count += saleItem.Count;
+                    stockItem.Weight += saleItem.Weight;
                     _dbContext.Update(stockItem);
                 }
             }

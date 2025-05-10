@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -10,83 +11,69 @@ namespace WareHouse.Controllers
     [Authorize]
     public class ProductsController : Controller
     {
-        private readonly NeondbContext _dbContext; // Замените NeondbContext на имя вашего DbContext
+        private readonly NeondbContext _DbContext; 
         private readonly Random _random;
 
         public ProductsController(NeondbContext dbContext)
         {
             _random = new Random();
-            _dbContext = dbContext;
+            _DbContext = dbContext;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(bool isHidden = false)
         {
-            ViewBag.Categories = _dbContext.Categories.ToList();
+            ViewBag.ShowHidden = isHidden;
+            ViewBag.Categories = _DbContext.MaterialTypes.Where(c => c.IsDeleted == false).ToList();
             return View();
         }
 
-		public async Task<IActionResult> DynamicSearch(string searchText, int? categoryId, decimal? minPrice, decimal? maxPrice, bool showLowStock)
-		{
-			IQueryable<Product> products = _dbContext.Products
-				.Include(p => p.Category)
-				.AsQueryable();
-
-			if (!string.IsNullOrEmpty(searchText))
-			{
-				products = products.Where(p => p.Name.Contains(searchText));
-			}
-
-			if (categoryId.HasValue)
-			{
-				products = products.Where(p => p.Categoryid == categoryId.Value);
-			}
-
-			if (minPrice.HasValue)
-			{
-				products = products.Where(p => p.Price >= minPrice.Value);
-			}
-
-			if (maxPrice.HasValue)
-			{
-				products = products.Where(p => p.Price <= maxPrice.Value);
-			}
-
-			if (showLowStock)
-			{
-				products = products.Where(p => p.Count <= 10); // Порог низкого остатка
-			}
-
-
-			var filteredProducts = await products.ToListAsync();
-
-			return PartialView("_ProductTablePartial", filteredProducts); // Return the Partial View
-		}
-
-		[Authorize(Policy = "AdminPolicy, ProcurementManagerPolicy")] // Доступ только для Admin и ProcurementManager
-        [HttpPost]
-        public IActionResult AddProduct(string Name, decimal Price, int Count, int Category)
+        public IActionResult DynamicSearch(string searchText, int? categoryId, bool isHidden) //поиск товаров через строку
         {
-            _dbContext.Products.Add(new Models.Product()
+            var products = _DbContext.Products
+                .Include(p => p.Materialtype).Where(p => p.isHidden == isHidden)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                products = products.Where(p => p.Name.ToLower().Contains(searchText.ToLower()));
+            }
+
+            if (categoryId.HasValue)
+            {
+
+                products = products.Where(p => p.MaterialTypeId == categoryId);
+            }
+ 
+            var productList = products.ToList();
+            return PartialView("_ProductTablePartial", productList);
+        }
+
+        [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
+        [HttpPost]
+        public IActionResult AddProduct(string Name, decimal Price, string SpecificGravity, string Weight, int MaterialType, string MaterialBrand)
+        {
+            _DbContext.Products.Add(new Models.Product()
             {
                 Id = _random.Next(100000, 999999).ToString(),
                 Name = Name,
                 Price = Price,
-                Count = Count,
-                Categoryid = Category
-
+                SpecificGravity = double.Parse(SpecificGravity, CultureInfo.InvariantCulture),
+                Weight = double.Parse(Weight, CultureInfo.InvariantCulture),
+                MaterialTypeId = MaterialType,
+                MaterialBrand = MaterialBrand
             });
-            _dbContext.SaveChanges();
+            _DbContext.SaveChanges();
             return RedirectToAction("Index");
         }
 
         [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
         public IActionResult DeleteProduct(string id)
         {
-            var product = _dbContext.Products.FirstOrDefault(x => x.Id.Trim() == id.Trim());
+            var product = _DbContext.Products.FirstOrDefault(x => x.Id.Trim() == id.Trim());
             if (product != null)
             {
                 product.isHidden = true;
-                _dbContext.SaveChanges();
+                _DbContext.SaveChanges();
             }
             else
                 throw new Exception("Товар не найден для удаления, возможно проблемы с id");
@@ -95,9 +82,9 @@ namespace WareHouse.Controllers
 
         [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
         [HttpPost]
-        public IActionResult EditProduct(string id, string name, decimal price, int count, int categoryId)
+        public IActionResult EditProduct(string id, string name, decimal price, string SpecificGravity, string Weight, int MaterialType, string MaterialBrand)
         {
-            var product = _dbContext.Products.FirstOrDefault(p => p.Id.Trim() == id.Trim());
+            var product = _DbContext.Products.FirstOrDefault(p => p.Id.Trim() == id.Trim());
             if (product == null)
             {
                 return NotFound();
@@ -105,12 +92,65 @@ namespace WareHouse.Controllers
 
             product.Name = name;
             product.Price = price;
-            product.Count = count;
-            product.Categoryid = categoryId;
-
-            _dbContext.SaveChanges();
+            product.MaterialTypeId = MaterialType;
+            product.MaterialBrand = MaterialBrand;
+            product.SpecificGravity = double.Parse(SpecificGravity, CultureInfo.InvariantCulture);
+            product.Weight = double.Parse(Weight, CultureInfo.InvariantCulture);
+            _DbContext.Update(product);
+            _DbContext.SaveChanges();
 
             return RedirectToAction("Index");
+        }
+        [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
+        [HttpPost]
+        public IActionResult SaveCategory(Materialtype category)
+        {
+            if (category.Id == 0)
+            {
+                // Добавление новой категории
+                category.Id = _DbContext.MaterialTypes.ToList().Count+1;
+                _DbContext.MaterialTypes.Add(category);
+            }
+            else
+            {
+                // Редактирование существующей категории
+                var existingCategory = _DbContext.MaterialTypes.Find(category.Id);
+                if (existingCategory != null)
+                {
+                    existingCategory.Name = category.Name;
+                }
+            }
+            _DbContext.SaveChanges();
+            return RedirectToAction("Index");
+        }
+
+        [Authorize(Policy = "AdminOrProcurement")] // Доступ только для Admin и ProcurementManager
+        [HttpPost]
+        public IActionResult DeleteCategory(int id)
+        {
+            var category = _DbContext.MaterialTypes.FirstOrDefault(c => c.Id == id);
+            if (category == null)
+            {
+                return NotFound("Категория не найдена");
+            }
+
+            bool isCategoryInUse = _DbContext.Products.Any(p => p.MaterialTypeId == id && p.Weight > 0 && !p.isHidden);
+
+            if (isCategoryInUse)
+            {
+                return BadRequest("Категория используется в товарах и не может быть удалена");
+            }
+
+            try
+            {
+                category.IsDeleted = true;
+                _DbContext.SaveChanges();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Произошла ошибка при удалении");
+            }
         }
     }
 

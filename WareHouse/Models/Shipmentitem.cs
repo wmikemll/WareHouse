@@ -9,7 +9,7 @@ public partial class Shipmentitem
 
     public string Productid { get; set; } = null!;
 
-    public int Count { get; set; }
+    public double Weight { get; set; }
 
     public string Shipmentid { get; set; } = null!;
 

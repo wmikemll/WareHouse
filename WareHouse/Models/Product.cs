@@ -10,13 +10,14 @@ public partial class Product
     public decimal Price { get; set; }
 
     public string Name { get; set; } = null!;
-
-    public int Count { get; set; }
-
-    public int? Categoryid { get; set; }
     public bool isHidden { get; set; } = false!;    
+    public int? MaterialTypeId { get; set; }
+    public string MaterialBrand { get; set; }
 
-    public virtual Category? Category { get; set; }
+    public double? Weight { get; set; } = 0;
+    public double? SpecificGravity { get; set; } = 0;
+
+    public virtual Materialtype? Materialtype { get; set; }
 
     public virtual ICollection<Saleitem> Saleitems { get; set; } = new List<Saleitem>();
 

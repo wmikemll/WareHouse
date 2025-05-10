@@ -1,4 +1,4 @@
-using System.Diagnostics;
+п»їusing System.Diagnostics;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
@@ -26,13 +26,12 @@ namespace WareHouse.Controllers
         {
             var role = User.FindFirstValue(ClaimTypes.Role);
 
-            // Check if the user is already authenticated
             if (User.Identity.IsAuthenticated)
             {
-                return View(); // Return the normal view if authenticated
+                return View(); 
             }
 
-            ViewBag.ShowModal = true; // Set a flag to show the modal
+            ViewBag.ShowModal = true; 
             return View();
         }
 
@@ -41,7 +40,6 @@ namespace WareHouse.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(string mail, string password)
         {
-            // 1. Находим пользователя только по email (без проверки пароля)
             var account = _dbContext.Accounts
                 .Include(a => a.User)
                 .ThenInclude(u => u.Role)
@@ -49,22 +47,20 @@ namespace WareHouse.Controllers
 
             if (account == null || account.User == null)
             {
-                ViewBag.ErrorMessage = "Неверная почта или пароль";
+                ViewBag.ErrorMessage = "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ";
                 ViewBag.ShowModal = true;
                 return View();
             }
 
-            // 2. Проверяем пароль с хешем из БД
             bool isPasswordValid = VerifyPassword(password, account.Password);
 
             if (!isPasswordValid)
             {
-                ViewBag.ErrorMessage = "Неверная почта или пароль";
+                ViewBag.ErrorMessage = "РџР°СЂРѕР»СЊ РЅРµРІРµСЂРЅС‹Р№";
                 ViewBag.ShowModal = true;
                 return View();
             }
 
-            // 3. Authentication (Create Claims & SignIn)
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, $"{account.User.Surname} {account.User.Name}"),
@@ -78,7 +74,7 @@ namespace WareHouse.Controllers
 
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = true // "Remember Me" functionality
+                IsPersistent = true 
             };
 
             await HttpContext.SignInAsync(
@@ -89,18 +85,18 @@ namespace WareHouse.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        private bool VerifyPassword(string password, string passwordHash)
+        private bool VerifyPassword(string password, string passwordHash) //РїСЂРѕРІРµСЂРєР° РїР°СЂРѕР»СЏ
         {
-            return password ==  Decrypt(passwordHash);
+            return password == Decrypt(passwordHash);
         }
 
-        public IActionResult Logout()
+        public IActionResult Logout() //РІС‹С…РѕРґ РёР· Р°РєРєР°СѓРЅС‚Р°
         {
             HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
 
-        public static string Decrypt(string cipherText)
+        public static string Decrypt(string cipherText) //Р Р°СЃС€РёС„СЂРѕРІР°РЅРёРµ РїР°СЂРѕР»СЏ
         {
             var cipherBytes = Convert.FromBase64String(cipherText);
             return Encoding.UTF8.GetString(cipherBytes);

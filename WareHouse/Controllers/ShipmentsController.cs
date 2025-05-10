@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Globalization;
 
 namespace WareHouse.Controllers
 {
@@ -25,22 +26,19 @@ namespace WareHouse.Controllers
         }
 
         [Authorize] // Доступ для просмотра: Admin, ProcurementManager, WarehouseWorker, Accountant
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(bool showHidden = false)
         {
             var role = User.FindFirstValue(ClaimTypes.Role);
-
-            // Загружаем поставки, статусы и пользователей (вместо ViewBags лучше использовать ViewModel)
             var shipments = await _DbContext.Shipments
-                .Include(s => s.Status) // Подгружаем статус
-                .Include(s => s.User) 
+                .Include(s => s.Status)
+                .Include(s => s.User)
                 .Include(s => s.Shipmentitems)
-                .Where(s => s.isHidden == false)// Подгружаем пользователя
+                .Where(s => s.isHidden == showHidden)
                 .ToListAsync();
             ViewBag.Products = _DbContext.Products.ToList();
             ViewBag.Statuses = _DbContext.Statuses.ToList();
-            ViewBag.Users = _DbContext.Users.ToList();  
-            // Передаем данные в представление через ViewBag.
-            // ...
+            ViewBag.Users = _DbContext.Users.ToList();
+            ViewBag.ShowHidden = showHidden;
             Dictionary<string, string> shipmentItemsJson = new Dictionary<string, string>();
 
             foreach (var shipment in shipments)
@@ -66,8 +64,13 @@ namespace WareHouse.Controllers
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "AdminOrProcurement")] // Создание поставок: Admin, ProcurementManager
 
-        public async Task<IActionResult> CreateShipment(string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> CreateShipment(string[] ProductIds, Dictionary<string, string> Quantities)
         {
+            if (Quantities == null || !Quantities.Any(q => double.Parse(q.Value, CultureInfo.InvariantCulture) > 0))
+            {
+                ModelState.AddModelError("", "Должен быть выбран хотя бы один товар");
+                return BadRequest(ModelState);
+            }
             if (ModelState.IsValid)
             {
                 var shipment = new Shipment
@@ -79,19 +82,18 @@ namespace WareHouse.Controllers
                 };
                 _DbContext.Shipments.Add(shipment);
                 _DbContext.SaveChanges();
-                // Добавляем ShipmentItems
                 foreach (var productId in ProductIds)
                 {
-                    if (Quantities.ContainsKey(productId) && Quantities[productId] > 0)
+                    if (Quantities.ContainsKey(productId) && double.Parse(Quantities[productId], CultureInfo.InvariantCulture) > 0)
                     {
-                        int quantity = Quantities[productId];
+                        double quantity = double.Parse(Quantities[productId], CultureInfo.InvariantCulture);
 
                         _DbContext.Shipmentitems.Add(new Shipmentitem
                         {
                             Id = _random.Next(100000,999999).ToString(),
                             Productid = productId,
                             Shipmentid = shipment.Id,
-                            Count = quantity // Используем указанное количество
+                            Weight = quantity 
                         });
                     }
                 }
@@ -112,18 +114,18 @@ namespace WareHouse.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "AdminOrProcurement")] // Редактирование поставок: Admin, ProcurementManager
-        public async Task<IActionResult> EditShipment(string Id, string[] ProductIds, Dictionary<string, int> Quantities)
+        public async Task<IActionResult> EditShipment(string Id, string[] ProductIds, Dictionary<string, string> Quantities)
         {
             if (ModelState.IsValid)
             {
                 // 1. Находим поставку в базе данных
                 var shipment = await _DbContext.Shipments
-                    .Include(s => s.Shipmentitems) // Важно, чтобы подгрузить ShipmentItems
+                    .Include(s => s.Shipmentitems) 
                     .FirstOrDefaultAsync(s => s.Id == Id);
 
                 if (shipment == null)
                 {
-                    return NotFound(); // Или другой подходящий ответ
+                    return NotFound(); 
                 }
 
                 // 2. Обновляем основные данные поставки
@@ -132,22 +134,21 @@ namespace WareHouse.Controllers
                 // 3. Обновляем список товаров в поставке
 
                 // 3.1. Удаляем существующие ShipmentItems (если нужно)
-                // Это безопасно, т.к. мы пересоздаем список
                 _DbContext.Shipmentitems.RemoveRange(shipment.Shipmentitems);
 
                 // 3.2. Добавляем новые ShipmentItems (или обновляем существующие)
                 foreach (var productId in ProductIds)
                 {
-                    if (Quantities.ContainsKey(productId) && Quantities[productId] > 0)
+                    if (Quantities.ContainsKey(productId) && double.Parse(Quantities[productId], CultureInfo.InvariantCulture) > 0)
                     {
-                        int quantity = Quantities[productId];
+                        double quantity = double.Parse(Quantities[productId], CultureInfo.InvariantCulture);
 
                         shipment.Shipmentitems.Add(new Shipmentitem
                         {
                             Id = _random.Next(100000,999999).ToString(),
                             Productid = productId,
                             Shipmentid = shipment.Id,
-                            Count = quantity
+                            Weight = quantity
                         });
                     }
                 }
@@ -160,7 +161,6 @@ namespace WareHouse.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    // Обработка конфликтов конкурентного доступа
                     if (!ShipmentExists(shipment.Id))
                     {
                         return NotFound();
@@ -180,8 +180,7 @@ namespace WareHouse.Controllers
                 return RedirectToAction(nameof(Index)); // Перенаправляем на список поставок
             }
 
-            // Если модель не прошла валидацию, возвращаем представление с ошибками
-            // (В реальном приложении лучше использовать Ajax для сохранения и отображать ошибки в модальном окне)
+           
             return View("Index"); // Возвращаемся на Index с заполненными данными
         }
 
@@ -199,8 +198,7 @@ namespace WareHouse.Controllers
                 return NotFound();
             }
 
-            // Получаем ID статуса "Отменено" (предположим, что он равен 4, измените его, если у вас другой ID)
-            int canceledStatusId = 3; // Замените на ваш фактический ID статуса
+            int canceledStatusId = 3;
 
             // Обновляем статус поставки на "Отменено"
             shipment.Statusid = canceledStatusId;
@@ -266,6 +264,7 @@ namespace WareHouse.Controllers
             try
             {
                 shipment.isHidden = true;
+                shipment.Statusid = 6;
                 _DbContext.SaveChanges();
             }
             catch (Exception)
@@ -287,7 +286,7 @@ namespace WareHouse.Controllers
 
             var shipment = await _DbContext.Shipments
                 .Include(s => s.Shipmentitems)
-                    .ThenInclude(si => si.Product)  // Важно для получения информации о товаре
+                    .ThenInclude(si => si.Product) 
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (shipment == null)
@@ -295,7 +294,7 @@ namespace WareHouse.Controllers
                 return NotFound();
             }
 
-            int unloadedStatusId = 4; // Замените на ваш фактический ID статуса
+            int unloadedStatusId = 4; 
 
             // Проверяем, что поставка еще не разгружена
             if (shipment.Statusid == unloadedStatusId)
@@ -316,7 +315,7 @@ namespace WareHouse.Controllers
                     // 2. Добавляем товары на склад (или обновляем их количество)
                     foreach (var shipmentItem in shipment.Shipmentitems)
                     {
-                        var product = shipmentItem.Product; // Получаем товар из ShipmentItem
+                        var product = shipmentItem.Product; 
                         if (product != null)
                         {
                             // Получаем существующую запись о товаре на складе (если есть)
@@ -324,7 +323,7 @@ namespace WareHouse.Controllers
                                 .FirstOrDefaultAsync(s => s.Id == product.Id);
 
                             // Если товар уже есть на складе, увеличиваем его количество
-                            stockItem.Count += shipmentItem.Count;
+                            stockItem.Weight += shipmentItem.Weight;
                             _DbContext.Update(stockItem);
                         }
                     }
@@ -340,7 +339,6 @@ namespace WareHouse.Controllers
                     // Откатываем транзакцию в случае ошибки
                     await transaction.RollbackAsync();
 
-                    // Обрабатываем ошибку (например, логируем ее)
                     ModelState.AddModelError("", "Ошибка при подтверждении разгрузки: " + ex.Message);
                     return View("Index");  //  Возвращаемся к списку с сообщением об ошибке
                 }

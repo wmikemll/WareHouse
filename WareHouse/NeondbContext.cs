@@ -18,7 +18,7 @@ public partial class NeondbContext : DbContext
 
     public virtual DbSet<Account> Accounts { get; set; }
 
-    public virtual DbSet<Category> Categories { get; set; }
+    public virtual DbSet<Materialtype> MaterialTypes { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
 
@@ -75,11 +75,11 @@ public partial class NeondbContext : DbContext
                 .HasConstraintName("fk_accounts_users");
         });
 
-        modelBuilder.Entity<Category>(entity =>
+        modelBuilder.Entity<Materialtype>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("category_pkey");
+            entity.HasKey(e => e.Id).HasName("material_pkey");
 
-            entity.ToTable("category");
+            entity.ToTable("materialtype");
 
             entity.Property(e => e.Id)
                 .ValueGeneratedNever()
@@ -87,6 +87,10 @@ public partial class NeondbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("isdeleted");
+
         });
 
         modelBuilder.Entity<Product>(entity =>
@@ -98,8 +102,7 @@ public partial class NeondbContext : DbContext
             entity.Property(e => e.Id)
                 .HasMaxLength(10)
                 .HasColumnName("id");
-            entity.Property(e => e.Categoryid).HasColumnName("categoryid");
-            entity.Property(e => e.Count).HasColumnName("count");
+            entity.Property(e => e.MaterialTypeId).HasColumnName("MaterialTypeid");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
@@ -109,10 +112,16 @@ public partial class NeondbContext : DbContext
             entity.Property(e => e.Price)
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
+            entity.Property(e => e.Weight)
+                .HasColumnName("Weight");
+            entity.Property(e => e.SpecificGravity)
+                .HasColumnName("SpecificGravity");
+            entity.Property(e => e.MaterialBrand)
+                .HasColumnName("MaterialBrand");
 
-            entity.HasOne(d => d.Category).WithMany(p => p.Products)
-                .HasForeignKey(d => d.Categoryid)
-                .HasConstraintName("products_categoryid_fkey");
+            entity.HasOne(d => d.Materialtype).WithMany(p => p.Products)
+                .HasForeignKey(d => d.MaterialTypeId)
+                .HasConstraintName("products_materialtype_fkey");
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -164,7 +173,7 @@ public partial class NeondbContext : DbContext
             entity.Property(e => e.Id)
                 .HasMaxLength(10)
                 .HasColumnName("id");
-            entity.Property(e => e.Count).HasColumnName("count");
+            entity.Property(e => e.Weight).HasColumnName("weight");
             entity.Property(e => e.Productid)
                 .HasMaxLength(10)
                 .HasColumnName("productid");
@@ -218,7 +227,7 @@ public partial class NeondbContext : DbContext
             entity.Property(e => e.Id)
                 .HasMaxLength(10)
                 .HasColumnName("id");
-            entity.Property(e => e.Count).HasColumnName("count");
+            entity.Property(e => e.Weight).HasColumnName("weight");
             entity.Property(e => e.Productid)
                 .HasMaxLength(10)
                 .HasColumnName("productid");

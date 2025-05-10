@@ -9,7 +9,7 @@ public partial class Saleitem
 
     public string Productid { get; set; } = null!;
 
-    public int Count { get; set; }
+    public double Weight { get; set; }
 
     public string Saleid { get; set; } = null!;
 

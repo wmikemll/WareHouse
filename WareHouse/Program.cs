@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using WareHouse;
 
@@ -12,6 +14,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Home/Index";
         options.AccessDeniedPath = "/Home/Index";
     });
+// Установка культуры с запятой как разделителем (например, для ru-RU)
+
 
 builder.Services.AddAuthorization(options =>
 {

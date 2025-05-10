@@ -8,6 +8,10 @@
     @if (isProcurementManagerOrAdmin) 
     {
         <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addShipmentModal">Добавить поставку</button>
+        <button id="toggleHiddenBtn" class="btn @(ViewBag.ShowHidden ? "btn-info" : "btn-secondary") mb-3">
+            <i class="fas @(ViewBag.ShowHidden ? "fa-eye-slash" : "fa-eye")"></i>
+            @(ViewBag.ShowHidden ? "Показать активные" : "Показать скрытые")
+        </button>
     }
 
     <div class="table-responsive">
@@ -39,7 +43,7 @@
                                 <ul class="list-unstyled">
                                     @foreach (var item in shipment.Shipmentitems)
                                     {
-                                        <li>@item.Product.Name - @item.Count шт.</li>
+                                        <li>@item.Product.Name - @item.Weight кг.</li>
                                     }
                                 </ul>
                             }
@@ -80,6 +84,10 @@
                                         <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-eye-slash"></i> Скрыть</button>
                                     </form>
                                 }
+                            }
+                            else if (shipment.Statusid==6)
+                            {
+
                             }
                             else 
                             {
@@ -122,14 +130,14 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="post" asp-action="CreateShipment" asp-controller="Shipments">
+                    <form method="post" asp-action="CreateShipment" asp-controller="Shipments" id="shipmentForm">
                         <div class="form-group">
                             <label>Товары:</label>
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Товар</th>
-                                        <th>Количество</th>
+                                        <th>Вес</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -145,7 +153,7 @@
                                                     <div class="input-group-prepend">
                                                         <button type="button" class="btn btn-outline-secondary quantity-minus" data-product-id="@product.Id"><i class="fas fa-minus"></i></button>
                                                     </div>
-                                                    <input type="number" class="form-control quantity-input" name="Quantities[@product.Id]" value="0" min="0" data-product-id="@product.Id">
+                                                    <input type="number" class="form-control quantity-input" step="0.01" name="Quantities[@product.Id]" value="0" min="0" data-product-id="@product.Id">
                                                     <div class="input-group-append">
                                                         <button type="button" class="btn btn-outline-secondary quantity-plus" data-product-id="@product.Id"><i class="fas fa-plus"></i></button>
                                                     </div>
@@ -168,7 +176,6 @@
     <!-- Модальное окно для редактирования поставки -->
     <div class="modal fade" id="editShipmentModal" tabindex="-1" role="dialog" aria-labelledby="editShipmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            @* modal-lg для большего окна, если нужно *@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editShipmentModalLabel">Редактировать поставку</h5>
@@ -185,7 +192,7 @@
                                 <thead>
                                     <tr>
                                         <th>Товар</th>
-                                        <th>Количество</th>
+                                        <th>Вес</th>
                                     </tr>
                                 </thead>
                                 <tbody id="editShipmentItems">
@@ -207,27 +214,61 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            $('.edit-product-btn').click(function () {
+        // Скрипт для добавления поставки
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчик отправки формы добавления поставки
+            const form = document.getElementById('shipmentForm');
+
+            form.addEventListener('submit', function(e) {
+                const quantityInputs = document.querySelectorAll('.quantity-input');
+                let hasSelectedProducts = false;
+
+                quantityInputs.forEach(input => {
+                    if (parseFloat(input.value) > 0) {
+                        hasSelectedProducts = true;
+                    }
+                });
+
+                if (!hasSelectedProducts) {
+                    e.preventDefault();
+                    alert('Выберите хотя бы один товар с количеством больше 0!');
+                    return false;
+                }
+                return true;
+            });
+
+            // Кнопки +/- для количества товаров
+            document.querySelectorAll('.quantity-plus').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.dataset.productId;
+                    const input = document.querySelector(`.quantity-input[data-product-id="${productId}"]`);
+                    input.value = (parseFloat(input.value) || 0) + 1;
+                });
+            });
+
+            document.querySelectorAll('.quantity-minus').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.dataset.productId;
+                    const input = document.querySelector(`.quantity-input[data-product-id="${productId}"]`);
+                    const newValue = (parseFloat(input.value) || 0) - 1;
+                    input.value = newValue >= 0 ? newValue : 0;
+                });
+            });
+        });
+
+        // Скрипт для редактирования поставки (jQuery)
+        $(document).ready(function() {
+            // Открытие модального окна редактирования
+            $('.edit-product-btn').click(function() {
                 var shipmentId = $(this).data('shipment-id');
-                var shipmentStatus = $(this).data('shipment-status');
-                var shipmentUser = $(this).data('shipment-user');
-                var shipmentItems = $(this).data('shipment-items'); 
-
-
+                var shipmentItems = $(this).data('shipment-items');
 
                 $('#editShipmentId').val(shipmentId);
-                $('#editShipmentStatus').val(shipmentStatus);
-                $('#editShipmentUser').val(shipmentUser);
-
-
-
-                //  Заполняем таблицу с товарами (предполагаем, что shipmentItems - это JSON)
                 var shipmentItemsTableBody = $('#editShipmentItems');
-                shipmentItemsTableBody.empty();  //  Очищаем таблицу перед заполнением
+                shipmentItemsTableBody.empty();
 
-                 if (shipmentItems) { //  Проверяем, что shipmentItems не null или undefined
-                    $.each(shipmentItems, function (index, item) {
+                if (shipmentItems && shipmentItems.length > 0) {
+                    $.each(shipmentItems, function(index, item) {
                         var row = `
                             <tr>
                                 <td>
@@ -235,7 +276,8 @@
                                     <input type="hidden" name="ProductIds" value="${item.Productid}" />
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control" name="Quantities[${item.Productid}]" value="${item.Count}" min="0">
+                                    <input type="number" class="form-control" step="0.01"
+                                           name="Quantities[${item.Productid}]" value="${item.Weight}" min="0">
                                 </td>
                             </tr>
                         `;
@@ -244,58 +286,32 @@
                 } else {
                     shipmentItemsTableBody.append('<tr><td colspan="2">Нет товаров в поставке</td></tr>');
                 }
-
-                $('#editShipmentModal').modal('show'); // Показываем модальное окно
             });
 
-
-             // Добавляем код для отслеживания изменений в модальном окне
-            $('#editShipmentModal').on('hidden.bs.modal', function () {
-                // Remove dynamically added content to prevent conflicts
+            // Очистка модального окна при закрытии
+            $('#editShipmentModal').on('hidden.bs.modal', function() {
                 $("#editShipmentItems").empty();
             });
         });
-    </script>
-    <script>
-        $(document).ready(function () {
-            // Обработчики кнопок "+", "-"
-            $('.quantity-plus').click(function () {
-                var productId = $(this).data('product-id');
-                var quantityInput = $('.quantity-input[data-product-id="' + productId + '"]');
-                var currentValue = parseInt(quantityInput.val());
-                quantityInput.val(currentValue + 1);
-            });
 
-            $('.quantity-minus').click(function () {
-                var productId = $(this).data('product-id');
-                var quantityInput = $('.quantity-input[data-product-id="' + productId + '"]');
-                var currentValue = parseInt(quantityInput.val());
-                if (currentValue > 0) {
-                    quantityInput.val(currentValue - 1);
-                }
-            });
+        // Дополнительный скрипт для управления статусами поставки
+        document.addEventListener('DOMContentLoaded', function() {
+            // Подтверждение действий с поставкой
+            document.querySelectorAll('form[action*="ConfirmUnloading"], form[action*="CancelShipment"], form[action*="MarkAsArrived"]')
+                .forEach(form => {
+                    form.addEventListener('submit', function(e) {
+                        if (!confirm('Вы уверены, что хотите выполнить это действие?')) {
+                            e.preventDefault();
+                        }
+                    });
+                });
         });
-    </script>
-    <script>
-        $(document).ready(function () {
-            // Обработчик нажатия на кнопку редактирования
-            $('.edit-shipment-btn').click(function () {
-                var shipmentId = $(this).data('shipment-id');
-                var shipmentDate = $(this).data('shipment-date');
-                var shipmentStatus = $(this).data('shipment-status');
-                var shipmentUser = $(this).data('shipment-user');
+        $(document).ready(function() {
+            $('#toggleHiddenBtn').click(function() {
+                const showHidden = !@Json.Serialize(ViewBag.ShowHidden);
 
-
-                $('#editShipmentId').val(shipmentId);
-                $('#editShipmentDate').val(shipmentDate);  // Устанавливаем значение даты
-                $('#editShipmentStatus').val(shipmentStatus);
-                $('#editShipmentUser').val(shipmentUser);
-
-
-                //  Дополнительно:  Выбрать нужные опции в select
-                $('#editShipmentStatus option[value="' + shipmentStatus + '"]').prop('selected', true);
-                $('#editShipmentUser option[value="' + shipmentUser + '"]').prop('selected', true);
-
+                // Просто переходим по ссылке с новым параметром
+                window.location.href = '@Url.Action("Index")' + '?showHidden=' + showHidden;
             });
         });
     </script>

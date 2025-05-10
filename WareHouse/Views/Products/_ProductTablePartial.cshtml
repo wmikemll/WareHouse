@@ -1,25 +1,43 @@
-﻿@model IEnumerable<Product>
-@using System.Security.Claims
+﻿@using System.Globalization
+@model IEnumerable<WareHouse.Models.Product>
 
-@foreach (var product in Model)
+@foreach (Product product in Model)
 {
-    <tr data-category-id="@product.Categoryid">
+    <tr data-category-id="@product.MaterialTypeId">
         <td>@product.Name</td>
         <td>@product.Price</td>
-        <td>@product.Count</td>
-        <td>@product.Category.Name</td>
-        @if (User.HasClaim(ClaimTypes.Role, "Менеджер по закупкам") || User.HasClaim(ClaimTypes.Role, "Администратор"))
+        <td>@product.Weight</td>
+        <td>
+            @if (product.MaterialTypeId != null)
+            {
+                @product.Materialtype.Name
+                @if (product.Materialtype.IsDeleted)
+                {
+                    <span class="text-danger"> (удалена)</span>
+                }
+            }
+            else
+            {
+                <span>Тип материала не задан</span>
+            }
+        </td>
+        <td>@product.MaterialBrand</td>
+        <td>@product.SpecificGravity</td>
+
+        @if (User.IsInRole("Менеджер по закупкам") || User.IsInRole("Администратор")) 
         {
             <td>
-                <button class="btn btn-primary btn-sm edit-product-btn"
+                <button type="button" class="btn btn-sm btn-primary edit-product-btn"
                         data-product-id="@product.Id"
                         data-product-name="@product.Name"
                         data-product-price="@product.Price"
-                        data-product-count="@product.Count"
-                        data-product-category-id="@product.Categoryid">
-                    Редактировать
+                        data-product-weight="@product.Weight.Value.ToString(CultureInfo.InvariantCulture)"
+                        data-product-specific-gravity="@product.SpecificGravity.Value.ToString(CultureInfo.InvariantCulture)"
+                        data-product-material-brand="@product.MaterialBrand"
+                        data-product-material-type="@product.MaterialTypeId">
+                    <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteProduct(@product.Id)">Удалить</button>
+                <a asp-action="DeleteProduct" asp-controller="Products" asp-route-id="@product.Id" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
             </td>
         }
     </tr>
