@@ -59,7 +59,7 @@ namespace WareHouse.Controllers
         {
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
             ViewBag.Users = await _dbContext.Users.ToListAsync();
-            ViewBag.Products = await _dbContext.Products.ToListAsync();
+            ViewBag.Products = await _dbContext.Products.Where(p => !p.isHidden).ToListAsync();
             return View();
         }
 
@@ -120,13 +120,13 @@ namespace WareHouse.Controllers
 
             ViewBag.Statuses = await _dbContext.Statuses.ToListAsync();
             ViewBag.Users = await _dbContext.Users.ToListAsync();
-            ViewBag.Products = await _dbContext.Products.ToListAsync();
+            ViewBag.Products = await _dbContext.Products.Where(p => !p.isHidden).ToListAsync();
             return View();
         }
 
         public async Task<IActionResult> FilterProducts(int? categoryId, string searchQuery)
         {
-            var productsQuery = _dbContext.Products.AsQueryable();
+            var productsQuery = _dbContext.Products.Where(p => !p.isHidden).AsQueryable();
 
             if (categoryId.HasValue)
             {

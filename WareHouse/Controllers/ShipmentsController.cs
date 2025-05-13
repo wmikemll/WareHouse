@@ -36,6 +36,7 @@ namespace WareHouse.Controllers
                 .Where(s => s.isHidden == showHidden)
                 .ToListAsync();
             ViewBag.Products = _DbContext.Products.ToList();
+            ViewBag.NonHidenProducts = _DbContext.Products.Where(p => !p.isHidden).ToList();
             ViewBag.Statuses = _DbContext.Statuses.ToList();
             ViewBag.Users = _DbContext.Users.ToList();
             ViewBag.ShowHidden = showHidden;
@@ -104,7 +105,7 @@ namespace WareHouse.Controllers
             {
                 ViewBag.Statuses = await _DbContext.Statuses.ToListAsync();
                 ViewBag.Users = await _DbContext.Users.ToListAsync();
-                ViewBag.Products = await _DbContext.Products.ToListAsync();
+                ViewBag.Products = await _DbContext.Products.Where(p => !p.isHidden).ToListAsync();
                 return View();
             }
         }
