@@ -5,8 +5,15 @@
 <section id="sales">
     <h2>Продажи</h2>
     <p>Список продаж.</p>
+    @if (User.HasClaim(ClaimTypes.Role, "Администратор") == true || User.HasClaim(ClaimTypes.Role, "Бухгалтер") == true) 
+    {
+        <a class="btn btn-primary mb-3" href="@Url.Action("GenerateReport", "Sales")">
+            <i class="fas fa-file-excel"></i> Создать отчет
+        </a>
+    }
     @if (isSaleManagerOrAdmin) 
     {
+
         <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addSaleModal">Добавить продажу</button>
         if (ViewBag.IsHidden)
         {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using OfficeOpenXml;
 using WareHouse.Models;
 
 namespace WareHouse.Controllers
@@ -217,6 +218,80 @@ namespace WareHouse.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+        public IActionResult GenerateReport()
+        {
+            EPPlusLicense ePPlusLicense = new EPPlusLicense();
+            ePPlusLicense.SetNonCommercialPersonal("Emil");
+            // Получаем данные для отчета
+            var sales = _dbContext.Sales
+                .Include(s => s.User)
+                .Include(s => s.Saleitems)
+                .ThenInclude(si => si.Product)
+                .ToList();
+
+            // Создаем Excel файл
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Продажи");
+
+                // Заголовки
+                worksheet.Cells[1, 1].Value = "ID";
+                worksheet.Cells[1, 2].Value = "Дата";
+                worksheet.Cells[1, 3].Value = "Пользователь";
+                worksheet.Cells[1, 4].Value = "Товары";
+                worksheet.Cells[1, 5].Value = "Вес";
+                worksheet.Cells[1, 6].Value = "Сумма";
+
+                // Данные
+                int row = 2;
+                foreach (var sale in sales)
+                {
+                    int startRow = row;
+                    var items = sale.Saleitems.Select(si => new
+                    {
+                        ProductName = si.Product.Name,
+                        Weight = si.Weight,
+                        Price = si.Product.Price
+                    }).ToList();
+
+                    int itemsCount = items.Count;
+
+                    // Заполняем ячейки для каждого товара
+                    for (int i = 0; i < itemsCount; i++)
+                    {
+                        var item = items[i];
+                        worksheet.Cells[row + i, 4].Value = $"{item.ProductName} - {item.Weight} шт.";
+                        worksheet.Cells[row + i, 5].Value = item.Weight;
+                        worksheet.Cells[row + i, 6].Value = item.Price * (decimal)item.Weight;
+                    }
+
+                    int endRow = row + itemsCount - 1;
+
+                    // Объединяем ячейки для ID, Даты, Пользователя по диапазону
+                    worksheet.Cells[startRow, 1, endRow, 1].Merge = true;
+                    worksheet.Cells[startRow, 2, endRow, 2].Merge = true;
+                    worksheet.Cells[startRow, 3, endRow, 3].Merge = true;
+
+                    // Заполняем общие данные
+                    worksheet.Cells[startRow, 1].Value = sale.Id;
+                    worksheet.Cells[startRow, 2].Value = sale.Date.ToShortDateString();
+                    worksheet.Cells[startRow, 3].Value = $"{sale.User.Surname} {sale.User.Name}";
+
+                    // Продвигаемся дальше
+                    row += itemsCount;
+                }
+
+                // Автонастройка ширины столбцов
+                worksheet.Cells.AutoFitColumns();
+
+                // Возвращаем файл
+                var stream = new MemoryStream();
+                package.SaveAs(stream);
+                stream.Position = 0;
+
+                return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Отчет_по_продажам.xlsx");
+            }
         }
     }
 
