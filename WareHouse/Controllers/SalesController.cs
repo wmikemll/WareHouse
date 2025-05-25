@@ -261,7 +261,7 @@ namespace WareHouse.Controllers
                     for (int i = 0; i < itemsCount; i++)
                     {
                         var item = items[i];
-                        worksheet.Cells[row + i, 4].Value = $"{item.ProductName} - {item.Weight} шт.";
+                        worksheet.Cells[row + i, 4].Value = $"{item.ProductName}";
                         worksheet.Cells[row + i, 5].Value = item.Weight;
                         worksheet.Cells[row + i, 6].Value = item.Price * (decimal)item.Weight;
                     }
