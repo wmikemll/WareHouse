@@ -77,7 +77,7 @@ namespace WareHouse.Controllers
                 var shipment = new Shipment
                 {
                     Id = _random.Next(10000,999999).ToString(),
-                    Date = DateOnly.FromDateTime(DateTime.Now),
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow),
                     Statusid = 1,
                     Userid = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };

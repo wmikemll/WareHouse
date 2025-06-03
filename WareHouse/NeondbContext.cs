@@ -37,8 +37,7 @@ public partial class NeondbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=ep-mute-band-a8ch3ky8-pooler.eastus2.azure.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_SBV1YKWrxCf0");
+        => optionsBuilder.UseNpgsql("Host=ballast.proxy.rlwy.net;Port=22248;Database=railway;Username=postgres;Password=PPxKrDuSkenWiZDtBzaunCUyyuFubBrT");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,7 +51,7 @@ public partial class NeondbContext : DbContext
 
             entity.Property(e => e.Id)
                 .ValueGeneratedNever()
-                .HasColumnName("Id");
+                .HasColumnName("id");
             entity.Property(e => e.Mail)
                 .HasMaxLength(50)
                 .HasColumnName("mail");
@@ -108,12 +107,12 @@ public partial class NeondbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.isHidden)
                 .HasDefaultValue(false)
-                .HasColumnName("isHidden");
+                .HasColumnName("ishidden");
             entity.Property(e => e.Price)
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
             entity.Property(e => e.Weight)
-                .HasColumnName("Weight");
+                .HasColumnName("weight");
             entity.Property(e => e.SpecificGravity)
                 .HasColumnName("SpecificGravity");
             entity.Property(e => e.MaterialBrand)
@@ -145,7 +144,7 @@ public partial class NeondbContext : DbContext
             entity.ToTable("sales");
             entity.Property(e => e.IsHidden)
                 .HasDefaultValue(false)
-                .HasColumnName("isHidden");
+                .HasColumnName("ishidden");
             entity.Property(e => e.StatusId).HasColumnName("statusId");
 
             entity.Property(e => e.Id)
@@ -208,7 +207,7 @@ public partial class NeondbContext : DbContext
                 .HasColumnName("userid");
             entity.Property(e => e.isHidden)
                 .HasDefaultValue(false)
-                .HasColumnName("isHidden");
+                .HasColumnName("ishidden");
             entity.HasOne(d => d.Status).WithMany(p => p.Shipments)
                 .HasForeignKey(d => d.Statusid)
                 .HasConstraintName("shipments_statusid_fkey");

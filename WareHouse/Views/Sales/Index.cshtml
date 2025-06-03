@@ -51,7 +51,7 @@
                                 <ul class="list-unstyled">
                                     @foreach (var item in sale.Saleitems)
                                     {
-                                        <li>@item.Product.Name - @item.Weight шт.</li>
+                                        <li>@item.Product.Name - @item.Weight кг.</li>
                                     }
                                 </ul>
                             }
@@ -159,6 +159,26 @@
             });
 
             loadProducts();
+        });
+        document.getElementById('salesForm').addEventListener('submit', function (e) {
+            let isValid = true;
+
+            // Проверяем все поля ввода количества
+            document.querySelectorAll('input[name^="Quantities"]').forEach(input => {
+                const maxWeight = parseFloat(input.getAttribute('max'));
+                const enteredWeight = parseFloat(input.value);
+
+                if (enteredWeight > maxWeight) {
+                    alert(`Нельзя продать больше ${maxWeight} для товара ${input.dataset.productName}`);
+                    input.focus();
+                    isValid = false;
+                    return false;
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+            }
         });
     </script>
 }

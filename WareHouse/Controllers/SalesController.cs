@@ -79,7 +79,7 @@ namespace WareHouse.Controllers
                 var sale = new Sale
                 {
                     Id = random.Next(100000, 999999).ToString(),
-                    Date = DateOnly.FromDateTime(DateTime.Now),
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow),
                     StatusId = 5,
                     Userid = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
@@ -240,8 +240,8 @@ namespace WareHouse.Controllers
                 worksheet.Cells[1, 2].Value = "Дата";
                 worksheet.Cells[1, 3].Value = "Пользователь";
                 worksheet.Cells[1, 4].Value = "Товары";
-                worksheet.Cells[1, 5].Value = "Вес";
-                worksheet.Cells[1, 6].Value = "Сумма";
+                worksheet.Cells[1, 5].Value = "Вес (кг)";
+                worksheet.Cells[1, 6].Value = "Сумма (руб)";
 
                 // Данные
                 int row = 2;
